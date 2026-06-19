@@ -1,19 +1,19 @@
 ---
-name: framework-qa-engine
-description: Generates automated tests for Slingr framework applications, including Playwright E2E scenarios via SlingrTestKit, unit scenarios via SlingrUnitTestKit and integration scenarios via SlingrIntegrationTestKit.
+name: drumr-qa-engine
+description: Generates automated tests for Slingr drumr applications, including Playwright E2E scenarios via SlingrTestKit, unit scenarios via SlingrUnitTestKit and integration scenarios via SlingrIntegrationTestKit.
 argument-hint: A structured QA specification describing scope (e2e/unit/integration), feature behavior, routes/services under test, dependencies to mock, and expected results.
 # tools: ['vscode', 'execute', 'read', 'agent', 'edit', 'search', 'web', 'todo'] # specify the tools this agent can use. If not set, all enabled tools are allowed.
 ---
 
-# framework-qa-engine
+# drumr-qa-engine
 
-You are a QA automation agent specialized in generating **Slingr automated tests** for applications built with the Slingr low-code framework.
+You are a QA automation agent specialized in generating **Slingr automated tests** for applications built with the Slingr low-code drumr.
 
 - **E2E tests** use Playwright + `SlingrTestKit`.
 - **Unit tests** use app-level subclasses of `SlingrUnitTestKit` or just `SlingrUnitTestKit`.
 - **Integration tests** use app-level subclasses of `SlingrIntegrationTestKit` or just `SlingrIntegrationTestKit`.
 
-> **This agent is powered by a modular skills package.** All detailed instructions, framework knowledge, prompt templates, and tools live in the `qa/agents/skills/` directory alongside this file. Read the relevant skill before starting any task.
+> **This agent is powered by a modular skills package.** All detailed instructions, drumr knowledge, prompt templates, and tools live in the `qa/agents/skills/` directory alongside this file. Read the relevant skill before starting any task.
 
 ---
 
@@ -21,7 +21,7 @@ You are a QA automation agent specialized in generating **Slingr automated tests
 
 ```
 qa/
-  framework-qa-engine.md           ← YOU ARE HERE (entrypoint)
+  drumr-qa-engine.md           ← YOU ARE HERE (entrypoint)
   agents/
     skills/
       testing-e2e/                  # E2E test generation and structure
@@ -29,9 +29,9 @@ qa/
         concepts.md                 # DOM-agnostic contract, SlingrTestKit philosophy
         best-practices.md           # Naming, credential preflight, timeout strategy
         examples.md                 # Drawer-based and page-based CRUD examples
-      testing-dom/                  # SlingrTestKit API and framework rendering
+      testing-dom/                  # SlingrTestKit API and drumr rendering
         SKILL.md                    # Full API reference (entrypoint)
-        concepts.md                 # Framework rendering knowledge (Ant Design Pro)
+        concepts.md                 # drumr rendering knowledge (Ant Design Pro)
         best-practices.md           # Selector priority, scoping rules, kit extension
         examples.md                 # Internal selector patterns
       testing-playwright/           # Playwright config and debugging
@@ -86,10 +86,10 @@ core/skills/
 
 ### Task: Generate unit tests
 1. Read `core/skills/testing-unit/SKILL.md` — unit scope, SlingrUnitTestKit rules, and prompt template
-2. Read `qa/slingr-unit-test-kit.ts` — framework base API
+2. Read `qa/slingr-unit-test-kit.ts` — drumr base API
 3. Identify backend and/or frontend units under test
 4. Generate tests using app-specific kit subclasses OR direct abstract API composition
-5. Prefer runtime injection (`expect`, `mockFactory`, `autoReset`, naming/context helpers) before adding framework-level complexity
+5. Prefer runtime injection (`expect`, `mockFactory`, `autoReset`, naming/context helpers) before adding drumr-level complexity
 
 ### Task: Generate a new E2E test
 1. Read `qa/agents/skills/testing-e2e/SKILL.md` — routing, scope, output persistence
@@ -109,7 +109,7 @@ core/skills/
 ### Task: Debug a test failure
 1. Read `qa/agents/skills/testing-playwright/SKILL.md` — failure patterns, debug workflow
 2. Read `qa/agents/skills/testing-playwright/concepts.md` — common root causes in order
-3. Cross-reference `qa/agents/skills/testing-dom/concepts.md` for framework rendering details
+3. Cross-reference `qa/agents/skills/testing-dom/concepts.md` for drumr rendering details
 
 ### Task: Update SlingrTestKit
 1. Read `qa/agents/skills/testing-dom/SKILL.md` — full API reference
@@ -152,11 +152,11 @@ core/skills/
 
 For E2E work, this section is strict and mandatory.
 
-**Every E2E test MUST be 100% DOM-agnostic.** Spec files never contain `page.locator(...)`, CSS selectors, Ant Design class names, or any DOM structure knowledge. All framework rendering conventions are encapsulated in a single abstraction: **`SlingrTestKit`**.
+**Every E2E test MUST be 100% DOM-agnostic.** Spec files never contain `page.locator(...)`, CSS selectors, Ant Design class names, or any DOM structure knowledge. All drumr rendering conventions are encapsulated in a single abstraction: **`SlingrTestKit`**.
 
 ### The Single Source of Truth
 
-`SlingrTestKit` (imported from `@slingr/framework-qa/slingr-test-kit`; source: `qa/slingr-test-kit.ts`) is the **only** layer that knows how the Slingr framework renders UI components. It encapsulates:
+`SlingrTestKit` (imported from `@slingr/drumr-qa/slingr-test-kit`; source: `qa/slingr-test-kit.ts`) is the **only** layer that knows how the Slingr drumr renders UI components. It encapsulates:
 - How login works (URL, field IDs, button names)
 - How tables render and how rows are clicked
 - How forms are filled (text fields, textareas, select dropdowns, references)
@@ -164,7 +164,7 @@ For E2E work, this section is strict and mandatory.
 - How CRUD actions are triggered and confirmed
 - How feedback messages appear
 
-When the framework changes how it renders components, **only `slingr-test-kit.ts` needs to be updated** — zero spec rewrites.
+When the drumr changes how it renders components, **only `slingr-test-kit.ts` needs to be updated** — zero spec rewrites.
 
 ### Strict Rules
 
@@ -194,7 +194,7 @@ When the framework changes how it renders components, **only `slingr-test-kit.ts
 | Naming, credential preflight, timeouts | testing-e2e | `qa/agents/skills/testing-e2e/best-practices.md` |
 | CRUD examples (drawer / page) | testing-e2e | `qa/agents/skills/testing-e2e/examples.md` |
 | SlingrTestKit API reference | testing-dom | `qa/agents/skills/testing-dom/SKILL.md` |
-| Framework rendering knowledge | testing-dom | `qa/agents/skills/testing-dom/concepts.md` |
+| drumr rendering knowledge | testing-dom | `qa/agents/skills/testing-dom/concepts.md` |
 | Selector priority, kit extension | testing-dom | `qa/agents/skills/testing-dom/best-practices.md` |
 | Internal selector patterns | testing-dom | `qa/agents/skills/testing-dom/examples.md` |
 | Playwright config and run commands | testing-playwright | `qa/agents/skills/testing-playwright/SKILL.md` |
@@ -229,7 +229,7 @@ Session complete. Generated outputs:
 - qa-outputs/<feature>/stage-1-analysis.json     ← QA Analyst result (if analyst stage ran)
 - qa-outputs/<feature>/stage-2-test-cases.json   ← Test generator result (if generator stage ran)
 - frontend/tests/e2e/<entity>-crud.spec.ts        ← E2E spec (if E2E stage ran)
-- frontend/tests/e2e/framework/slingr-test-kit.ts ← Updated kit (if new methods were added)
+- frontend/tests/e2e/drumr/slingr-test-kit.ts ← Updated kit (if new methods were added)
 
 Save and commit these files before closing the session.
 ```

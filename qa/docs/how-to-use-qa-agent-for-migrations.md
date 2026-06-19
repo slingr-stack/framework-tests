@@ -32,7 +32,73 @@ All three stages can run in sequence within one session, or each can be run inde
 
 ## Before you start
 
-### 1. Gather the app's requirements
+### 1. Choose an input mode for your migration phase
+
+The analyst accepts requirements from different sources depending on what is available at each phase of the migration. Use `runQaAnalystAgentFromInput(input)` with the appropriate `kind` value.
+
+| Phase | What you have | Recommended mode |
+|-------|--------------|------------------|
+| Early — Drumr models not built yet | Legacy DB schema or entity list | `metadata-only` |
+| Active development — models being built | Drumr `backend/src` directory with decorated entities | `app-codebase` |
+| Requirements in GitHub / Jira tickets | Issue URL or copied issue body | `github-issue` |
+| Stabilisation — models complete | Finalised `appMetadata` JSON | `standalone` + `appMetadata` (dual mode) |
+
+#### Phase 1 — Early migration (`metadata-only`)
+
+Feed entity names from the legacy schema. The adapter synthesises baseline CRUD acceptance criteria for every entity, giving you a coverage baseline before any Drumr code exists.
+
+```ts
+{
+  kind: 'metadata-only',
+  appMetadata: {
+    appName: 'Client CRM',
+    models: [
+      { name: 'Contact', fields: [{ name: 'name' }, { name: 'email' }, { name: 'status' }] }
+    ],
+    actions: [{ name: 'Archive', model: 'Contact' }]
+  }
+}
+```
+
+#### Phase 2 — Active development (`app-codebase`)
+
+Point the adapter at the Drumr backend source directory. It scans for `@DataModel` / `@Entity` decorated classes and registered actions, then builds `appMetadata` automatically — no manual JSON export needed.
+
+```ts
+{
+  kind: 'app-codebase',
+  sourcePath: 'apps/client-crm/backend/src',
+  userStory: 'As a sales rep, I want to manage contacts...',
+  acceptanceCriteria: ['A contact must have a name.', ...]
+}
+```
+
+#### Phase 2 — Requirements in GitHub issues (`github-issue`)
+
+If migration tasks are tracked as GitHub issues, paste the issue body directly. The adapter extracts the user story from the first "As a …" line and acceptance criteria from checklist items (`- [ ] …`) or a numbered list under an "Acceptance Criteria" section. Combine with `appMetadata` for dual-mode cross-validation.
+
+```ts
+{
+  kind: 'github-issue',
+  issue: { title: 'Contact management', body: '...issue body...' },
+  appMetadata: { ... }   // optional — enables dual-mode cross-validation
+}
+```
+
+#### Phase 3 — Stabilisation (dual mode)
+
+Once Drumr models are complete, supply the finalised metadata JSON as `appMetadata` on a `standalone` input. This gives the tightest cross-validation — every criterion is checked against real fields and actions before any spec is generated.
+
+```ts
+{
+  kind: 'standalone',
+  userStory: '...',
+  acceptanceCriteria: [...],
+  appMetadata: { appName: 'Client CRM', models: [...], actions: [...] }
+}
+```
+
+### 2. Gather the app's requirements
 
 Collect user stories and acceptance criteria from any source available:
 - Existing requirement documents (Word, Confluence, Notion, Jira)
@@ -41,30 +107,6 @@ Collect user stories and acceptance criteria from any source available:
 - Existing test cases (manual or automated) from the original system
 
 You do not need to have perfect requirements. The analyst stage is designed to surface ambiguities and ask you to clarify them.
-
-### 2. Optionally collect app metadata
-
-If the Drumr data models for the migrated app already exist (either designed by a dev agent or found in the codebase), export their schema as a JSON object. This enables **dual mode**, which produces more accurate analysis by cross-validating behaviors against real model fields and actions.
-
-Example metadata shape:
-```json
-{
-  "appName": "Client CRM",
-  "models": [
-    {
-      "name": "Contact",
-      "fields": [
-        { "name": "name", "type": "text" },
-        { "name": "email", "type": "email" },
-        { "name": "status", "type": "choice" }
-      ]
-    }
-  ],
-  "actions": [
-    { "name": "Archive", "model": "Contact" }
-  ]
-}
-```
 
 ### 3. Set up credentials
 
@@ -212,7 +254,7 @@ Each feature gets its own folder under `qa-outputs/` and its own spec files unde
 Start with whatever you have — even rough notes or screen recordings. The analyst stage will extract testable behaviors and surface what's missing. It will ask clarifying questions through the interview process.
 
 **What if the app metadata isn't available yet?**
-Use standalone mode (without metadata). The analyst uses heuristics to extract entity names from the requirements text. The output will be slightly less precise but still useful.
+Use `metadata-only` mode if you have a legacy schema with entity names — the adapter synthesises baseline CRUD criteria for you. If you have neither metadata nor formal requirements, use `standalone` mode with rough notes; the analyst uses heuristics to extract entity names from the text and asks clarifying questions for anything ambiguous.
 
 **Can the agent discover requirements on its own from screenshots?**
 Yes — share screenshots or describe the existing app's screens in plain language. The analyst stage can work from descriptions. The more specific you are, the fewer clarifying questions will be needed.

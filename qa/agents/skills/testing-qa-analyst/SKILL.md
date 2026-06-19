@@ -39,20 +39,36 @@ When the user wants to go all the way from requirements to specs:
 
 ## Usage Modes
 
-### Standalone mode (requirements only)
+All modes normalise into a `RequirementRequest` before analysis runs. Use `runQaAnalystAgentFromInput(input)` for any source-based mode; use `runQaAnalystAgent(request)` only when you already hold a `RequirementRequest`.
 
-Triggered with just user stories and acceptance criteria. Uses heuristic noun scanning to identify target models.
+### Standalone mode
 
-### Dual mode (requirements + app metadata) — recommended
+Input: `{ kind: 'standalone', userStory, acceptanceCriteria }`.
+Uses heuristic noun scanning to identify target models. No cross-validation.
 
-Triggered with both requirements and application metadata JSON. Enables cross-validation:
-- Warning if a status-transition behavior is requested on a model with no state fields
-- Warning if an action verb (assign, archive, export) has no matching registered action
-- Warning if a referenced field does not exist on the target model
+### Dual mode (recommended)
+
+Input: `{ kind: 'standalone', userStory, acceptanceCriteria, appMetadata }`.
+Enables cross-validation: flags missing state fields, undeclared custom actions, and entities referenced in criteria that are absent from the metadata.
+
+### GitHub issue mode
+
+Input: `{ kind: 'github-issue', issue: { title, body, labels? }, appMetadata? }`.
+The adapter extracts the user story from the first "As a …" sentence in the body (falls back to the issue title) and acceptance criteria from checklist items (`- [ ] …`) or numbered/bulleted list items under an "Acceptance Criteria" / "AC" section. Combine with `appMetadata` to get dual-mode cross-validation.
+
+### App codebase mode
+
+Input: `{ kind: 'app-codebase', sourcePath, userStory, acceptanceCriteria }`.
+The adapter scans the given directory for TypeScript source files and extracts entity/model class declarations (decorated with `@Entity`, `@DataModel`, `@Model`) and action registrations (`@GlobalAction`, `@ModelAction`, `@ObjectAction`, …). The extracted schema is used as `appMetadata` for full dual-mode cross-validation. Requirements must still be supplied explicitly.
+
+### Metadata-only mode
+
+Input: `{ kind: 'metadata-only', appMetadata, focusArea? }`.
+No user story or acceptance criteria required. The adapter synthesises a baseline CRUD user story and one positive criterion per entity plus one per registered custom action. Useful for brownfield audit passes or full-app coverage baselines.
 
 ### Interview mode
 
-When blockers or critical warnings are raised, the analyst suspends the analysis and launches a clarifying interview with the QA lead before continuing. Use `#tool:vscode/askQuestions` to conduct the interview one question at a time.
+Triggered automatically when the analysis surfaces `blocker` ambiguities. The analyst suspends processing and conducts a one-question-at-a-time interview with the QA lead using `#tool:vscode/askQuestions` before continuing.
 
 ---
 

@@ -38,6 +38,74 @@ export interface RequirementRequest {
   appMetadata?: AppMetadata;
 }
 
+// ---------------------------------------------------------------------------
+// Analyst input sources — normalised into RequirementRequest before analysis
+// ---------------------------------------------------------------------------
+
+/**
+ * The user provides user story and acceptance criteria directly.
+ * Optionally enriched with appMetadata for cross-validation (dual mode).
+ */
+export interface StandaloneInput {
+  kind: 'standalone';
+  userStory: string;
+  acceptanceCriteria: string[];
+  appMetadata?: AppMetadata;
+}
+
+/**
+ * Requirements come from a GitHub issue.
+ * The adapter extracts the user story from the issue title (or an "As a …"
+ * sentence in the body) and acceptance criteria from checklist / numbered
+ * list items under an "Acceptance Criteria" section.
+ */
+export interface GitHubIssueInput {
+  kind: 'github-issue';
+  issue: {
+    title: string;
+    body: string;
+    labels?: string[];
+  };
+  /** Optionally supply app metadata for dual-mode cross-validation */
+  appMetadata?: AppMetadata;
+}
+
+/**
+ * The agent has access to the application source files.
+ * The adapter scans the provided path for entity/model class declarations
+ * and action registrations, then builds appMetadata automatically.
+ * Requirements must still be supplied explicitly.
+ */
+export interface AppCodebaseInput {
+  kind: 'app-codebase';
+  /** Absolute path to the directory containing TypeScript source files (e.g. backend/src) */
+  sourcePath: string;
+  userStory: string;
+  acceptanceCriteria: string[];
+}
+
+/**
+ * Only app metadata is available — no user story or criteria supplied.
+ * The adapter synthesises baseline CRUD acceptance criteria for each entity.
+ * Useful for full-app coverage baseline or brownfield audit passes.
+ */
+export interface MetadataOnlyInput {
+  kind: 'metadata-only';
+  appMetadata: AppMetadata;
+  /**
+   * Optional focus area description used as the user story.
+   * When absent, a generic story is generated from the entity list.
+   */
+  focusArea?: string;
+}
+
+/** Discriminated union of all supported analyst input sources */
+export type AnalystInput =
+  | StandaloneInput
+  | GitHubIssueInput
+  | AppCodebaseInput
+  | MetadataOnlyInput;
+
 export interface AmbiguityReport {
   field: string;
   finding: string;

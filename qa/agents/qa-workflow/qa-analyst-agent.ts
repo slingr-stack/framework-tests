@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { resolveInput } from './input-adapters.js';
 import type {
+  AnalystInput,
   RequirementRequest,
   QAAnalysisResult,
   TestableBehavior,
@@ -368,4 +370,19 @@ export function runQaAnalystAgent(
     rulesApplied: ['SR-1 (Structural Validation)', 'SR-3 (Behavioral Contract)'],
     generatedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Entry point that accepts any supported input source and normalises it before
+ * running the analyst. Use this when requirements come from GitHub issues, a
+ * scanned app codebase, or metadata-only audit passes.
+ *
+ * For direct `RequirementRequest` inputs, use `runQaAnalystAgent` instead.
+ */
+export async function runQaAnalystAgentFromInput(
+  input: AnalystInput,
+  options?: { modelName?: string },
+): Promise<QAAnalysisResult> {
+  const request = await resolveInput(input);
+  return runQaAnalystAgent(request, options);
 }
