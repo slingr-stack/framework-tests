@@ -1,0 +1,67 @@
+# docker-compose.prod-test.yml
+# Extends docker-compose.yml to run the full production stack locally for smoke-testing.
+# Mirrors the GCP topology: nginx (port 8080) → backend:3000 / static SPA.
+#
+# IMPORTANT: Build the frontend first:
+#   (cd apps/project-management-app/frontend && npm run build)
+#
+# IMPORTANT: Docker build context is the app root (this folder).
+# In monorepo mode, the backend image expects backend/.docker/framework-backend.local.tgz
+# to be packed before docker compose runs. test-prod-local.js does this automatically.
+#
+# Usage (from repo root):
+#   docker compose \
+#     -f apps/project-management-app/docker-compose.yml \
+#     -f apps/project-management-app/docker-compose.prod-test.yml \
+#     up --build
+#
+# Or use the convenience script:
+#   node apps/project-management-app/ops/scripts/test-prod-local.js
+#
+# DB_SYNCHRONIZE=true creates tables on first run (safe for local testing only).
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      secrets:
+        - npm_token
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      NODE_ENV: production
+      DB_HOST: mainDs-db
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: project_management_app
+      DB_SYNCHRONIZE: "true"
+      JWT_SECRET: "local-test-secret-not-for-production"
+    depends_on:
+      mainDs-db:
+        condition: service_healthy
+    restart: on-failure
+
+  # nginx reverse-proxy that mirrors the GCP load balancer:
+  #   /graphql  → backend:3000
+  #   /auth/*   → backend:3000
+  #   /**       → React SPA static files
+  #
+  # Build the frontend dist/ before starting: (cd frontend && npm run build)
+  frontend:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./ops/nginx/prod-test.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    restart: on-failure
+
+secrets:
+  npm_token:
+    environment: NPM_TOKEN

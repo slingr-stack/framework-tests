@@ -1,0 +1,10 @@
+{
+  "skill": "backend-datamodels",
+  "date": "2026-05-26",
+  "model": "claude-sonnet-4-5",
+  "prompt": "canonical.prompt.md",
+  "baseline": "baseline.ts",
+  "compileStatus": "pass",
+  "lintStatus": "pass",
+  "notes": "Pilot baseline — Budget data model with 3 fields, belongs to Project. Represents the minimal correct output for a new data model."
+}

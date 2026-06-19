@@ -1,0 +1,4 @@
+{
+	"includeModels": ["File", "Project", "Task", "User"],
+	"excludeModels": []
+}

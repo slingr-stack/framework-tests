@@ -1,0 +1,404 @@
+{
+  "plans": [
+    {
+      "id": "TP-001",
+      "name": "Sprint Regression - Auth & CRUD",
+      "description": "Core authentication and CRUD operations regression plan.",
+      "cycles": [
+        {
+          "id": "CY-001",
+          "name": "Authentication",
+          "cases": [
+            {
+              "id": "TC-001",
+              "name": "Login with valid credentials",
+              "specFile": "auth.spec.ts",
+              "testName": "login with valid credentials redirects to dashboard",
+              "status": "passed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am on the login page"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I enter admin credentials"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "I should be redirected to the dashboard"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I should see the logged-in state"
+                }
+              ],
+              "folderId": "TF-002"
+            },
+            {
+              "id": "TC-002",
+              "name": "Login with invalid credentials",
+              "specFile": "auth.spec.ts",
+              "testName": "login with invalid credentials stays on login page",
+              "status": "passed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am on the login page"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I enter invalid credentials"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "I should remain on the login page"
+                }
+              ],
+              "folderId": "TF-002"
+            },
+            {
+              "id": "TC-003",
+              "name": "Session persists after reload",
+              "specFile": "auth.spec.ts",
+              "testName": "session persists after reload",
+              "status": "passed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am logged in as admin"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I reload the page"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "I should still be logged in"
+                }
+              ],
+              "folderId": "TF-002"
+            },
+            {
+              "id": "TC-004",
+              "name": "Logout clears session",
+              "specFile": "auth.spec.ts",
+              "testName": "logout clears session and redirects to login",
+              "status": "passed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am logged in as admin"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I click the logout button"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "I should be redirected to the login page"
+                }
+              ],
+              "folderId": "TF-002"
+            }
+          ]
+        },
+        {
+          "id": "CY-002",
+          "name": "Tasks CRUD",
+          "cases": [
+            {
+              "id": "TC-005",
+              "name": "Create a new task",
+              "specFile": "tasks-crud.spec.ts",
+              "testName": "should create a new task",
+              "status": "passed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am logged in as admin"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I navigate to /tasks"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I click the Create button"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I fill in the title field with a unique value"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I select a project from the dropdown"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I submit the creation form"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "I should see a success feedback message"
+                }
+              ],
+              "folderId": "TF-001"
+            },
+            {
+              "id": "TC-006",
+              "name": "Read task details",
+              "specFile": "tasks-crud.spec.ts",
+              "testName": "should read the created task",
+              "status": "passed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am logged in and on the tasks table"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I click on the created task row"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "I should see the task details in a drawer"
+                },
+                {
+                  "keyword": "And",
+                  "text": "the title should match the created value"
+                }
+              ],
+              "folderId": "TF-001"
+            },
+            {
+              "id": "TC-007",
+              "name": "Edit an existing task",
+              "specFile": "tasks-crud.spec.ts",
+              "testName": "should edit the task",
+              "status": "passed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am viewing a task in the drawer"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I click the Edit button"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I modify the title field"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I submit the save form"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "I should see a success feedback message"
+                }
+              ]
+            },
+            {
+              "id": "TC-008",
+              "name": "Delete a task",
+              "specFile": "tasks-crud.spec.ts",
+              "testName": "should delete the task",
+              "status": "passed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am viewing a task in the drawer"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I click the Delete button"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I confirm the deletion"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "the task should no longer appear in the table"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "CY-003",
+          "name": "Bulk Operations",
+          "cases": [
+            {
+              "id": "TC-009",
+              "name": "Bulk change priority",
+              "specFile": "bulk-actions.spec.ts",
+              "testName": "should execute bulk change priority action",
+              "status": "failed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am logged in and on the tasks table"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I select multiple rows via checkboxes"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I click the Bulk Change Priority action"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I select a priority in the dialog"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I execute the dialog"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "I should see the updated priorities in the table"
+                }
+              ]
+            },
+            {
+              "id": "TC-010",
+              "name": "Table row selection mechanics",
+              "specFile": "table-selection.spec.ts",
+              "testName": "should show selection alert with correct count",
+              "status": "failed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am logged in and on the tasks table"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I select a row checkbox"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "I should see a selection alert with '1 item selected'"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I select a second row"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "the alert should update to '2 items selected'"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TP-002",
+      "name": "Advanced Features",
+      "description": "Filters, references, compositions, and nested navigation.",
+      "cycles": [
+        {
+          "id": "CY-004",
+          "name": "Filters & References",
+          "cases": [
+            {
+              "id": "TC-011",
+              "name": "Filter table by reference field",
+              "specFile": "table-view-reference-filter.spec.ts",
+              "testName": "should filter tasks by project reference",
+              "status": "passed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am logged in and on the tasks table"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I open the Project reference filter"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I select a project option"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I apply the filters"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "the table should only show tasks for that project"
+                }
+              ]
+            },
+            {
+              "id": "TC-012",
+              "name": "Navigate nested modals",
+              "specFile": "nested-modal-navigation.spec.ts",
+              "testName": "should navigate through nested drawers",
+              "status": "passed",
+              "steps": [
+                {
+                  "keyword": "Given",
+                  "text": "I am viewing a task in a drawer"
+                },
+                {
+                  "keyword": "When",
+                  "text": "I click on a related entity link"
+                },
+                {
+                  "keyword": "Then",
+                  "text": "a nested drawer should open"
+                },
+                {
+                  "keyword": "And",
+                  "text": "I should see the related entity details"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TP-003",
+      "name": "Checking by JB",
+      "cycles": []
+    },
+    {
+      "id": "TP-004",
+      "name": "New TestPlan",
+      "cycles": [
+        {
+          "id": "CY-005",
+          "name": "New Cycle",
+          "cases": [
+            {
+              "id": "TC-013",
+              "name": "Filter table by reference",
+              "specFile": "table-view-reference-filter.spec.ts",
+              "testName": "should filter tasks by project reference",
+              "status": "pending",
+              "steps": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "caseFolders": [
+    {
+      "id": "TF-001",
+      "name": "Backend"
+    },
+    {
+      "id": "TF-002",
+      "name": "Login",
+      "parentId": "TF-001"
+    }
+  ]
+}

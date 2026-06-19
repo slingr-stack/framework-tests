@@ -1,0 +1,14 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Drumr: Debug App",
+			"runtimeExecutable": "drumr",
+			"runtimeArgs": ["debug"],
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "openOnSessionStart"
+		}
+	]
+}

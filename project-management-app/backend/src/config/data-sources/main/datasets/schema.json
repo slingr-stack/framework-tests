@@ -1,0 +1,1225 @@
+{
+	"version": "1.0.0",
+	"generatedAt": "2026-04-20T16:21:19.679Z",
+	"models": [
+		{
+			"name": "Address",
+			"quantity": "5",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@UuidField({ primaryKey: true, generated: true, required: true })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "street",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: true, maxLength: 200, docs: \"Street address (including number, apartment, etc.)\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"maxLength": 200
+					}
+				},
+				{
+					"name": "city",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: true, maxLength: 100, docs: \"City or locality\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"maxLength": 100
+					}
+				},
+				{
+					"name": "state",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ maxLength: 100, docs: \"State, province, or region\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"maxLength": 100
+					}
+				},
+				{
+					"name": "postalCode",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: true, maxLength: 20, docs: \"Postal or ZIP code\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"maxLength": 20
+					}
+				},
+				{
+					"name": "country",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: true, maxLength: 100, docs: \"Country\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"maxLength": 100
+					}
+				}
+			]
+		},
+		{
+			"name": "Budget",
+			"quantity": "5",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@UuidField({ required: true, primaryKey: true, generated: true, docs: \"Unique identifier for the budget\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "name",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: true, minLength: 3, maxLength: 200, docs: \"Budget name or description\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"minLength": 3,
+						"maxLength": 200
+					}
+				},
+				{
+					"name": "hourlyRate",
+					"type": "FinancialNumber",
+					"tsType": "FinancialNumber",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DecimalField({ required: true, decimals: 2, roundingType: \"roundHalfToEven\", min: \"0\", docs: \"Hourly labor rate\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "FinancialNumber",
+					"constraints": {
+						"min": "0",
+						"decimals": 2
+					}
+				},
+				{
+					"name": "estimatedHours",
+					"type": "number",
+					"tsType": "number",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@NumberField({ required: true, min: 0, docs: \"Estimated hours for the project\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "number",
+					"constraints": {
+						"min": 0
+					}
+				},
+				{
+					"name": "materialsCost",
+					"type": "FinancialNumber",
+					"tsType": "FinancialNumber",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DecimalField({ required: true, decimals: 2, roundingType: \"roundHalfToEven\", min: \"0\", docs: \"Cost of materials\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "FinancialNumber",
+					"constraints": {
+						"min": "0",
+						"decimals": 2
+					}
+				},
+				{
+					"name": "taxRate",
+					"type": "FinancialNumber",
+					"tsType": "FinancialNumber",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DecimalField({ required: true, decimals: 2, roundingType: \"roundHalfToEven\", min: \"0\", max: \"100\", docs: \"Tax rate as a percentage\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "FinancialNumber",
+					"constraints": {
+						"min": "0",
+						"max": "100",
+						"decimals": 2
+					}
+				},
+				{
+					"name": "laborCost",
+					"type": "FinancialNumber",
+					"tsType": "FinancialNumber",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DecimalField({ required: false, calculation: \"manual\", decimals: 2, roundingType: \"roundHalfToEven\", docs: \"Total labor cost (hourlyRate * estimatedHours)\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "FinancialNumber",
+					"constraints": {
+						"decimals": 2
+					}
+				},
+				{
+					"name": "subtotal",
+					"type": "FinancialNumber",
+					"tsType": "FinancialNumber",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DecimalField({ required: false, calculation: \"manual\", decimals: 2, roundingType: \"roundHalfToEven\", docs: \"Subtotal before tax (laborCost + materialsCost)\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "FinancialNumber",
+					"constraints": {
+						"decimals": 2
+					}
+				},
+				{
+					"name": "taxAmount",
+					"type": "FinancialNumber",
+					"tsType": "FinancialNumber",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DecimalField({ required: false, calculation: \"manual\", decimals: 2, roundingType: \"roundHalfToEven\", docs: \"Tax amount calculated on subtotal\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "FinancialNumber",
+					"constraints": {
+						"decimals": 2
+					}
+				},
+				{
+					"name": "total",
+					"type": "FinancialNumber",
+					"tsType": "FinancialNumber",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DecimalField({ required: false, calculation: \"manual\", decimals: 2, roundingType: \"roundHalfToEven\", docs: \"Total cost including tax\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "FinancialNumber",
+					"constraints": {
+						"decimals": 2
+					}
+				},
+				{
+					"name": "effectiveTaxRate",
+					"type": "FinancialNumber",
+					"tsType": "FinancialNumber",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DecimalField({ required: false, calculation: \"manual\", decimals: 2, roundingType: \"roundHalfToEven\", docs: \"Effective tax rate as percentage of total\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "FinancialNumber",
+					"constraints": {
+						"decimals": 2
+					}
+				},
+				{
+					"name": "summary",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: false, calculation: \"manual\", docs: \"Summary of the budget breakdown\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				}
+			]
+		},
+		{
+			"name": "File",
+			"quantity": "5",
+			"fields": [
+				{
+					"name": "description",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ docs: \"Optional description of the file\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				}
+			]
+		},
+		{
+			"name": "ProjectReport",
+			"quantity": "5",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@UuidField({ required: true, primaryKey: true, generated: true, docs: \"Unique identifier for the report\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "title",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: true, docs: \"Title of the report\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "generatedAt",
+					"type": "Date",
+					"tsType": "Date",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DateTimeField({ required: true, docs: \"Date and time when the report was generated\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "Date",
+					"constraints": {}
+				},
+				{
+					"name": "project",
+					"type": "Project",
+					"tsType": "Project",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ReferenceField({ required: false, type: () => Project, docs: \"The project this report belongs to\" })"
+					],
+					"isReference": true,
+					"isComposition": false,
+					"referencedType": "Project",
+					"constraints": {
+						"type": "Project"
+					}
+				},
+				{
+					"name": "file",
+					"type": "File",
+					"tsType": "File",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ReferenceField({ required: true, type: () => File, docs: \"The associated PDF file\" })"
+					],
+					"isReference": true,
+					"isComposition": false,
+					"referencedType": "File",
+					"constraints": {
+						"type": "File"
+					}
+				},
+				{
+					"name": "sections",
+					"type": "string[]",
+					"tsType": "string[]",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: true, docs: \"Sections included in the report\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string[]",
+					"constraints": {}
+				}
+			]
+		},
+		{
+			"name": "Task",
+			"quantity": "5",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@UuidField({ required: true, primaryKey: true, generated: true, docs: \"Unique identifier for the task\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "title",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: true, minLength: 3, maxLength: 200, docs: \"Title of the task\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"minLength": 3,
+						"maxLength": 200
+					}
+				},
+				{
+					"name": "description",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@LongTextField({ maxLength: 5000, docs: \"Detailed description of the task\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"maxLength": 5000
+					}
+				},
+				{
+					"name": "status",
+					"type": "ToDo | InProgress | InReview | Done | Blocked",
+					"tsType": "ToDo | InProgress | InReview | Done | Blocked",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ChoiceField({ required: true, type: () => TaskStatus, docs: \"Current status of the task\" })",
+						"@Index({ type: \"hash\", name: \"idx_task_status\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "ToDo | InProgress | InReview | Done | Blocked",
+					"constraints": {
+						"type": "hash"
+					}
+				},
+				{
+					"name": "priority",
+					"type": "Low | Medium | High | Urgent | Critical",
+					"tsType": "Low | Medium | High | Urgent | Critical",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ChoiceField({ required: true, type: () => TaskPriority, docs: \"Priority level of the task\", query: {\"sorting\":false} })",
+						"@Index({ type: \"hash\", name: \"idx_task_priority\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "Low | Medium | High | Urgent | Critical",
+					"constraints": {
+						"type": "hash"
+					}
+				},
+				{
+					"name": "project",
+					"type": "Project",
+					"tsType": "Project",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ReferenceField({ required: true, type: () => Project, load: true, onDelete: \"delete\", filter: () => ({\n      isArchived: false,\n    }), docs: \"Project this task belongs to\" })"
+					],
+					"isReference": true,
+					"isComposition": false,
+					"referencedType": "Project",
+					"constraints": {
+						"type": "Project",
+						"onDelete": "delete"
+					},
+					"filter": "Referenced record's \"isArchived\" must be false"
+				},
+				{
+					"name": "assignee",
+					"type": "User",
+					"tsType": "User",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ReferenceField({ type: () => User, load: true, filter: () => ({\n      roles: {\n        elemMatch: { in: [Role.Developer, Role.Manager, Role.Admin] },\n      },\n    }), docs: \"User assigned to work on this task\" })"
+					],
+					"isReference": true,
+					"isComposition": false,
+					"referencedType": "User",
+					"constraints": {
+						"type": "User"
+					},
+					"filter": "Referenced record's \"roles\" must satisfy: {\n        elemMatch: { in: [Role.Developer, Role.Manager, Role.Admin] },\n      }"
+				},
+				{
+					"name": "reporter",
+					"type": "User",
+					"tsType": "User",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ReferenceField({ type: () => User, load: true, filter: () => ({\n      roles: {\n        elemMatch: { in: [Role.Developer, Role.Manager, Role.Admin] },\n      },\n    }), docs: \"User who created this task\" })"
+					],
+					"isReference": true,
+					"isComposition": false,
+					"referencedType": "User",
+					"constraints": {
+						"type": "User"
+					},
+					"filter": "Referenced record's \"roles\" must satisfy: {\n        elemMatch: { in: [Role.Developer, Role.Manager, Role.Admin] },\n      }"
+				},
+				{
+					"name": "estimatedHours",
+					"type": "number",
+					"tsType": "number",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@IntegerField({ min: 0, max: 999, docs: \"Estimated hours to complete the task\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "number",
+					"constraints": {
+						"min": 0,
+						"max": 999
+					}
+				},
+				{
+					"name": "actualHours",
+					"type": "number",
+					"tsType": "number",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@IntegerField({ min: 0, max: 999, docs: \"Actual hours spent on the task\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "number",
+					"constraints": {
+						"min": 0,
+						"max": 999
+					}
+				},
+				{
+					"name": "dueDate",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DateField({ docs: \"Due date for the task\" })",
+						"@Index()"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "startedAt",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DateField({ docs: \"When the task was started\", available: (task: Task) => task.status === TaskStatus.InProgress ||\n      task.status === TaskStatus.InReview ||\n      task.status === TaskStatus.Done ||\n      task.status === TaskStatus.Blocked })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "completedAt",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DateField({ docs: \"When the task was completed\", available: (task: Task) => task.status === TaskStatus.Done })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "isBillable",
+					"type": "false | true",
+					"tsType": "false | true",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@BooleanField({ docs: \"Whether the task is billable to the client\", required: true })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "false | true",
+					"constraints": {}
+				},
+				{
+					"name": "tags",
+					"type": "string[]",
+					"tsType": "string[]",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ docs: \"Tags for categorizing the task\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string[]",
+					"constraints": {}
+				},
+				{
+					"name": "createdAt",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DateTimeField({ docs: \"When the task was created\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "updatedAt",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DateTimeField({ docs: \"When the task was last updated\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "technicalDetails",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@LongTextField({ docs: \"Technical details, reproduction steps, or code snippets\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "jsonMetadata",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@JsonField({ docs: \"Custom metadata for the task (e.g. external IDs, integration data, custom attributes)\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "reviewChecks",
+					"type": "ReviewChecks",
+					"tsType": "ReviewChecks",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@CompositionField({ type: () => ReviewChecks, required: false })"
+					],
+					"isReference": false,
+					"isComposition": true,
+					"referencedType": "ReviewChecks",
+					"constraints": {
+						"type": "ReviewChecks"
+					}
+				},
+				{
+					"name": "notes",
+					"type": "Note[]",
+					"tsType": "Note[]",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@CompositionField({ type: () => Note, docs: \"Notes associated with the task\" })"
+					],
+					"isReference": false,
+					"isComposition": true,
+					"referencedType": "Note[]",
+					"constraints": {
+						"type": "Note"
+					}
+				},
+				{
+					"name": "metadata",
+					"type": "TaskMetadata[]",
+					"tsType": "TaskMetadata[]",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@CompositionField({ type: () => TaskMetadata, docs: \"Key/value metadata entries for the task\" })"
+					],
+					"isReference": false,
+					"isComposition": true,
+					"referencedType": "TaskMetadata[]",
+					"constraints": {
+						"type": "TaskMetadata"
+					}
+				},
+				{
+					"name": "attachments",
+					"type": "File[]",
+					"tsType": "File[]",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ReferenceField({ type: () => File, docs: \"File attachments for this task (images, PDFs, documents, etc.)\" })"
+					],
+					"isReference": true,
+					"isComposition": false,
+					"referencedType": "File[]",
+					"constraints": {
+						"type": "File"
+					}
+				},
+				{
+					"name": "summary",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ minLength: 3, maxLength: 200, calculation: \"manual\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"minLength": 3,
+						"maxLength": 200
+					}
+				}
+			]
+		},
+		{
+			"name": "User",
+			"quantity": "5",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@UuidField({ primaryKey: true, generated: true, required: true, docs: \"Unique identifier for the user\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "createdAt",
+					"type": "Date",
+					"tsType": "Date",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DateTimeField({ docs: \"When the user account was created\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "Date",
+					"constraints": {}
+				},
+				{
+					"name": "updatedAt",
+					"type": "Date",
+					"tsType": "Date",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DateTimeField({ docs: \"When the user account was last updated\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "Date",
+					"constraints": {}
+				},
+				{
+					"name": "roles",
+					"type": "System | Admin | Manager | Developer[]",
+					"tsType": "System | Admin | Manager | Developer[]",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ChoiceField({ type: () => Role, docs: \"Roles assigned to the user\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "System | Admin | Manager | Developer[]",
+					"constraints": {
+						"type": "Role"
+					}
+				},
+				{
+					"name": "addresses",
+					"type": "Address[]",
+					"tsType": "Address[]",
+					"required": false,
+					"available": true,
+					"decorators": ["@SharedCompositionField({ type: () => Address })"],
+					"isReference": false,
+					"isComposition": true,
+					"referencedType": "Address[]",
+					"constraints": {
+						"type": "Address"
+					}
+				},
+				{
+					"name": "firstName",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": ["@TextField()"],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "lastName",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": ["@TextField()"],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "email",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": ["@EmailField()"],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "password",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": ["@TextField()"],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "status",
+					"type": "UserStatus",
+					"tsType": "UserStatus",
+					"required": false,
+					"available": true,
+					"decorators": ["@ChoiceField()"],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "UserStatus",
+					"constraints": {}
+				}
+			]
+		},
+		{
+			"name": "Project",
+			"quantity": "5",
+			"fields": [
+				{
+					"name": "id",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@UuidField({ required: true, primaryKey: true, generated: true, docs: \"Unique identifier for the project\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {}
+				},
+				{
+					"name": "name",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: true, minLength: 3, maxLength: 100, docs: \"Name of the project\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"minLength": 3,
+						"maxLength": 100
+					}
+				},
+				{
+					"name": "code",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ required: true, minLength: 3, maxLength: 20, regex: \"/^[A-Z]{2,5}-\\d{1,5}$/\", regexMessage: \"Code must be in format: PREFIX-NUMBER (e.g., PROJ-123)\", docs: \"Unique project code identifier\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"minLength": 3,
+						"maxLength": 20,
+						"regex": "/^[A-Z]{2,5}-\\d{1,5}$/"
+					}
+				},
+				{
+					"name": "description",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@HtmlField({ maxLength: 5000, docs: \"Detailed description of the project\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"maxLength": 5000
+					}
+				},
+				{
+					"name": "status",
+					"type": "Planning | Active | OnHold | Completed | Cancelled",
+					"tsType": "Planning | Active | OnHold | Completed | Cancelled",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ChoiceField({ required: true, type: () => ProjectStatus, docs: \"Current status of the project\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "Planning | Active | OnHold | Completed | Cancelled",
+					"constraints": {
+						"type": "ProjectStatus"
+					}
+				},
+				{
+					"name": "priority",
+					"type": "Low | Medium | High | Critical",
+					"tsType": "Low | Medium | High | Critical",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ChoiceField({ required: true, type: () => ProjectPriority, docs: \"Priority level of the project\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "Low | Medium | High | Critical",
+					"constraints": {
+						"type": "ProjectPriority"
+					}
+				},
+				{
+					"name": "startDate",
+					"type": "Date",
+					"tsType": "Date",
+					"required": false,
+					"available": true,
+					"decorators": ["@DateField({ docs: \"Project start date\" })"],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "Date",
+					"constraints": {}
+				},
+				{
+					"name": "endDate",
+					"type": "Date",
+					"tsType": "Date",
+					"required": false,
+					"available": true,
+					"decorators": ["@DateField({ docs: \"Project end date\" })"],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "Date",
+					"constraints": {}
+				},
+				{
+					"name": "budget",
+					"type": "FinancialNumber",
+					"tsType": "FinancialNumber",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@MoneyField({ decimals: 2, roundingType: \"roundHalfToEven\", min: \"0\", positive: true, docs: \"Total budget allocated for the project\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "FinancialNumber",
+					"constraints": {
+						"min": "0",
+						"positive": true,
+						"decimals": 2
+					}
+				},
+				{
+					"name": "completionPercentage",
+					"type": "number",
+					"tsType": "number",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@IntegerField({ min: 0, max: 100, docs: \"Project completion percentage (0-100)\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "number",
+					"constraints": {
+						"min": 0,
+						"max": 100
+					}
+				},
+				{
+					"name": "meetingTime",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TimeField({ min: \"08:00\", max: \"17:00\", precision: \"HH:mm\", docs: \"Daily meeting time for the project team\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"min": "08:00",
+						"max": "17:00",
+						"precision": "HH:mm"
+					}
+				},
+				{
+					"name": "manager",
+					"type": "User",
+					"tsType": "User",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ReferenceField({ required: true, type: () => User, load: true, docs: \"Project manager responsible for this project\" })"
+					],
+					"isReference": true,
+					"isComposition": false,
+					"referencedType": "User",
+					"constraints": {
+						"type": "User"
+					}
+				},
+				{
+					"name": "teamMembers",
+					"type": "User[]",
+					"tsType": "User[]",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@ReferenceField({ type: () => User, load: true, docs: \"Team members assigned to this project\" })"
+					],
+					"isReference": true,
+					"isComposition": false,
+					"referencedType": "User[]",
+					"constraints": {
+						"type": "User"
+					}
+				},
+				{
+					"name": "isArchived",
+					"type": "false | true",
+					"tsType": "false | true",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@BooleanField({ docs: \"Whether the project is archived\", required: true })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "false | true",
+					"constraints": {}
+				},
+				{
+					"name": "createdAt",
+					"type": "Date",
+					"tsType": "Date",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DateTimeField({ docs: \"When the project was created\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "Date",
+					"constraints": {}
+				},
+				{
+					"name": "updatedAt",
+					"type": "Date",
+					"tsType": "Date",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@DateTimeField({ docs: \"When the project was last updated\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "Date",
+					"constraints": {}
+				},
+				{
+					"name": "support",
+					"type": "Support",
+					"tsType": "Support",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@CompositionField({ type: () => Support, docs: \"Support details associated with the project\" })"
+					],
+					"isReference": false,
+					"isComposition": true,
+					"referencedType": "Support",
+					"constraints": {
+						"type": "Support"
+					}
+				},
+				{
+					"name": "summary",
+					"type": "string",
+					"tsType": "string",
+					"required": false,
+					"available": true,
+					"decorators": [
+						"@TextField({ minLength: 3, maxLength: 200, calculation: \"automatic\" })"
+					],
+					"isReference": false,
+					"isComposition": false,
+					"referencedType": "string",
+					"constraints": {
+						"minLength": 3,
+						"maxLength": 200
+					}
+				}
+			]
+		}
+	]
+}

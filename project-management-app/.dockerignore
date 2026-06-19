@@ -1,0 +1,13 @@
+# Prevent local dependency folders from being copied into Docker build context.
+**/node_modules
+
+# Never bake secrets or local env config into images.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Keep Docker context small and avoid leaking local artifacts.
+.git
+.gitignore
+npm-debug.log
+pnpm-debug.log

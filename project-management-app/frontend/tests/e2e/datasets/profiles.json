@@ -1,0 +1,10 @@
+{
+  "default": {
+    "dataset": "default",
+    "description": "Full baseline dataset for most E2E specs"
+  },
+  "index-test": {
+    "dataset": "index-test",
+    "description": "Lean dataset used by index-focused scenarios"
+  }
+}

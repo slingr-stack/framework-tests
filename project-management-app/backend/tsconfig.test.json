@@ -1,0 +1,12 @@
+{
+	"extends": "./tsconfig.json",
+	"ts-node": {
+		"require": ["tsconfig-paths/register"]
+	},
+	"compilerOptions": {
+		"types": ["jest", "node", "supertest", "express"],
+		"isolatedModules": true
+	},
+	"include": ["src/**/*", "tests/**/*", "config/jest.setup.ts"],
+	"exclude": ["node_modules", "dist", "logs"]
+}

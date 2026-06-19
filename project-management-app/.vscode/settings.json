@@ -1,0 +1,64 @@
+{
+	"sqltools.connections": [
+		{
+			"ssh": "Disabled",
+			"previewLimit": 50,
+			"server": "localhost",
+			"port": 5433,
+			"driver": "'postgres' as const",
+			"name": "test",
+			"database": "postgres",
+			"username": "postgres"
+		},
+		{
+			"name": "Drumr: MainDs",
+			"driver": "PostgreSQL",
+			"server": "process.env.DB_HOST ?? 'localhost'",
+			"database": "process.env.DB_NAME ?? 'project_management_app'",
+			"username": "process.env.DB_USER ?? 'postgres'",
+			"password": "process.env.DB_PASSWORD ?? 'postgres'"
+		}
+	],
+
+	// ── File watcher exclusions ───────────────────────────────────────────────
+	"files.watcherExclude": {
+		"**/node_modules/**": true,
+		"**/dist/**": true,
+		"**/build/**": true,
+		"generated/**": true,
+		".umi/**": true,
+		".umi-production/**": true,
+		"logs/**": true,
+		"**/dataSets/**": true
+	},
+
+	// ── Search exclusions ─────────────────────────────────────────────────────
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/dist": true,
+		"**/build": true,
+		"generated": true,
+		".umi": true,
+		".umi-production": true,
+		"logs": true,
+		"**/dataSets": true
+	},
+
+	// ── Explorer exclusions ───────────────────────────────────────────────────
+	"files.exclude": {
+		"generated": true,
+		".umi": true,
+		".umi-production": true,
+		"logs": true,
+		"**/dataSets": false,
+	},
+
+	"playwright.reuseBrowser": false,
+	"playwright.workspaceFolder": "${workspaceFolder}/apps/project-management-app",
+	"typescript.preferences.importModuleSpecifier": "non-relative",
+	"javascript.preferences.importModuleSpecifier": "non-relative",
+	"typescript.updateImportsOnFileMove.enabled": "always",
+	"javascript.updateImportsOnFileMove.enabled": "always",
+	"npm.packageManager": "pnpm",
+	"drumr.testRunner.enabled": true
+}

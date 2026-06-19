@@ -1,0 +1,20 @@
+{
+	"graphql": {
+		"port": 3099,
+		"enableExplorer": false
+	},
+	"auth": {
+		"enabled": false
+	},
+	"metadata": {
+		"name": "project-management-app-test",
+		"version": "0.0.0-test",
+		"description": "Test configuration for integration tests"
+	},
+	"custom": {
+		"testMode": true,
+		"featureFlags": {
+			"newDashboard": false
+		}
+	}
+}

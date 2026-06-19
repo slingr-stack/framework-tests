@@ -1,0 +1,70 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react",
+    "module": "esnext",
+    "target": "es2017",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "resolveJsonModule": true,
+    "preserveSymlinks": false,
+    "types": [
+      "jest",
+      "node"
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@gql": [
+        "./generated/gql/index.ts"
+      ],
+      "@gql/*": [
+        "./generated/gql/*"
+      ],
+      "@testing-library/react": [
+        "../../../core/frontend/node_modules/@testing-library/react"
+      ]
+    },
+    "noImplicitOverride": true
+  },
+  "include": [
+    "src/**/*",
+    "tests/**/*",
+    ".umirc.ts",
+    "generated/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "tests/e2e",
+    "tests/integration"
+  ],
+  "watchOptions": {
+    "watchFile": "useFsEventsOnParentDirectory",
+    "watchDirectory": "useFsEvents",
+    "fallbackPolling": "dynamicpriority",
+    "synchronousWatchDirectory": false,
+    "excludeDirectories": [
+      "**/node_modules",
+      "**/.git",
+      "dist",
+      "../../../core",
+      "../../../core/node_modules",
+      "../../../../node_modules"
+    ],
+    "excludeFiles": [
+      "**/node_modules/**/package.json",
+      "../../../core/node_modules/**/package.json"
+    ]
+  }
+}

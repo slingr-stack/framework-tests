@@ -1,0 +1,25 @@
+node_modules
+dist
+.env
+.env.local
+*.log
+coverage
+.DS_Store
+generated
+frontend/dist
+frontend/.umi
+frontend/.turbopack
+frontend/.umi-production
+backend/config/codegen.yml
+backend/.drumr
+backend/files
+# Playwright test artifacts
+test-results/
+playwright-report/
+playwright-report-sequential/
+.auth/
+
+# Drumr generated artifacts
+frontend/generated/
+backend/generated/
+shared/generated/

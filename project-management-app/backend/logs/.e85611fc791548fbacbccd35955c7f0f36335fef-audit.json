@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": false,
+        "amount": 14
+    },
+    "auditLog": "logs/.e85611fc791548fbacbccd35955c7f0f36335fef-audit.json",
+    "files": [
+        {
+            "date": 1778597610386,
+            "name": "logs/slingr-2026-05-12.log",
+            "hash": "a3d1c9195aa8fb87486f8df224164534985687811f2941c317b4da77cd412957"
+        }
+    ],
+    "hashType": "sha256"
+}

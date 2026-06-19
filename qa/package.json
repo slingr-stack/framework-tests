@@ -1,0 +1,51 @@
+{
+  "name": "@drumr/framework-qa",
+  "version": "1.0.0-beta.12",
+  "description": "Drumr Framework QA testing utilities",
+  "main": "./dist/drumr-test-kit.js",
+  "types": "./dist/drumr-test-kit.d.ts",
+  "files": [
+    "dist/**/*",
+    "drumr-test-kit.ts",
+    "drumr-integration-test-kit.ts",
+    "drumr-unit-test-kit.ts",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/drumr-test-kit.d.ts",
+      "import": "./dist/drumr-test-kit.js",
+      "require": "./dist/drumr-test-kit.js",
+      "default": "./dist/drumr-test-kit.js"
+    },
+    "./drumr-test-kit": {
+      "types": "./dist/drumr-test-kit.d.ts",
+      "import": "./dist/drumr-test-kit.js",
+      "require": "./dist/drumr-test-kit.js",
+      "default": "./dist/drumr-test-kit.js"
+    },
+    "./drumr-integration-test-kit": {
+      "types": "./dist/drumr-integration-test-kit.d.ts",
+      "import": "./dist/drumr-integration-test-kit.js",
+      "require": "./dist/drumr-integration-test-kit.js",
+      "default": "./dist/drumr-integration-test-kit.js"
+    },
+    "./drumr-unit-test-kit": {
+      "types": "./dist/drumr-unit-test-kit.d.ts",
+      "import": "./dist/drumr-unit-test-kit.js",
+      "require": "./dist/drumr-unit-test-kit.js",
+      "default": "./dist/drumr-unit-test-kit.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json"
+  },
+  "peerDependencies": {
+    "@playwright/test": "^1.58.2"
+  },
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "registry": "https://us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/",
+    "access": "restricted"
+  }
+}
