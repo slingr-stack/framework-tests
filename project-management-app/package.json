@@ -1,0 +1,46 @@
+{
+	"name": "project-management-app-workspace",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Tasky workspace",
+	"scripts": {
+		"install:all": "cd backend && pnpm install && cd ../frontend && pnpm install",
+		"build:qa": "pnpm -C ../qa run build",
+		"build": "cd backend && pnpm run build",
+		"build:frontend": "cd frontend && pnpm run build",
+		"build:all": "pnpm run build && pnpm run build:frontend",
+		"biome:check": "pnpm run biome:check:backend && pnpm run biome:check:frontend",
+		"biome:check:backend": "cd backend && pnpm dlx @biomejs/biome@2.4.15 check .",
+		"biome:check:frontend": "cd frontend && pnpm dlx @biomejs/biome@2.4.15 check .",
+		"biome:lint": "pnpm run biome:lint:backend && pnpm run biome:lint:frontend",
+		"biome:lint:backend": "cd backend && pnpm dlx @biomejs/biome@2.4.15 lint .",
+		"biome:lint:frontend": "cd frontend && pnpm dlx @biomejs/biome@2.4.15 lint .",
+		"biome:format": "pnpm run biome:format:backend && pnpm run biome:format:frontend",
+		"biome:format:backend": "cd backend && pnpm dlx @biomejs/biome@2.4.15 format . --write",
+		"biome:format:frontend": "cd frontend && pnpm dlx @biomejs/biome@2.4.15 format . --write",
+		"dev:backend": "cd backend && pnpm run dev",
+		"dev:frontend": "cd frontend && pnpm run dev",
+		"test": "npx drumr gql generate-sdk && cd backend && pnpm test && cd ../frontend && pnpm test",
+		"test:unit": "cd backend && npm run test:unit",
+		"test:integration": "cd backend && npm run test:integration",
+		"pretest:e2e": "npm run build:qa",
+		"test:e2e": "npx playwright test",
+		"pretest:e2e:headed": "npm run build:qa",
+		"test:e2e:headed": "npx playwright test --headed",
+		"pretest:e2e:debug": "npm run build:qa",
+		"test:e2e:debug": "npx playwright test --headed --debug",
+		"test:e2e:codegen": "npx playwright codegen http://localhost:8000"
+	},
+	"keywords": [
+		"drumr",
+		"project-management",
+		"demo"
+	],
+	"author": "Drumr Team",
+	"license": "MIT",
+	"dependencies": {
+		"@umijs/bundler-utoopack": "^4.6.55",
+		"@umijs/max": "^4.6.55"
+	},
+	"devDependencies": {}
+}

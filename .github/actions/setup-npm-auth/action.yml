@@ -1,0 +1,27 @@
+name: 'Setup npm authentication for Google Artifact Registry'
+description: 'Authenticates to Google Cloud and configures npm for the private Artifact Registry'
+
+inputs:
+  gcp-sa-key:
+    description: 'GCP Service Account key JSON for Artifact Registry authentication'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ inputs.gcp-sa-key }}
+
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Configure npm authentication for Artifact Registry
+      shell: bash
+      run: |
+        TOKEN=$(gcloud auth print-access-token)
+        echo "::add-mask::$TOKEN"
+        # Write directly to ~/.npmrc — works with both npm and pnpm
+        echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+        echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"

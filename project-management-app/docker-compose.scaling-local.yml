@@ -1,0 +1,44 @@
+# docker-compose.scaling-local.yml
+# Dedicated stack for distributed-lock scaling tests against local framework code.
+# Keeps docker-compose.prod-test.yml and deploy-oriented scripts unchanged.
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.local
+    # nginx is the external entry point; backend is internal-only so scaling
+    # can run without host-port conflicts.
+    expose:
+      - "3000"
+    environment:
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      NODE_ENV: production
+      DB_HOST: mainDs-db
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: project_management_app
+      DB_SYNCHRONIZE: "true"
+      # Disable workflows for this lock-scaling test stack to avoid DBOS
+      # multi-replica bootstrap races that are unrelated to lock behavior.
+      WORKFLOWS_ENABLED: "false"
+      JWT_SECRET: "local-test-secret-not-for-production"
+      DISTRIBUTED_LOCKS_PROVIDER: postgres
+      DISTRIBUTED_LOCKS_DATASOURCE: mainDs
+    depends_on:
+      mainDs-db:
+        condition: service_healthy
+    restart: on-failure
+
+  frontend:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./ops/nginx/scaling-local.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    restart: on-failure

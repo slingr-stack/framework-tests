@@ -1,0 +1,10 @@
+{
+  "defaultProfile": "default",
+  "specProfiles": {
+    "bulk-actions.spec.ts": "default",
+    "bulk-assign-to-me.spec.ts": "default",
+    "summary-view.spec.ts": "default",
+    "task-assignee-details.spec.ts": "default",
+    "table-selection.spec.ts": "default"
+  }
+}

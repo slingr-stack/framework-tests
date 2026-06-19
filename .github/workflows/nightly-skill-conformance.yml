@@ -1,0 +1,111 @@
+name: Nightly Skill Conformance
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 2am UTC daily
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+env:
+  NPM_VERSION: 10.9.2
+  PNPM_VERSION: 10
+
+jobs:
+  skill-conformance:
+    name: Nightly Skill Conformance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pin npm version
+        run: npm install -g npm@${{ env.NPM_VERSION }}
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Show runtime versions
+        run: |
+          node -v
+          npm -v
+          pnpm -v
+
+      - name: Setup npm auth for Artifact Registry
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure npm authentication for Artifact Registry
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+
+      - name: Install root dependencies
+        run: |
+          export NODE_ENV=development
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile --prod=false --ignore-scripts=false
+          else
+            pnpm install --no-frozen-lockfile --prod=false --ignore-scripts=false
+          fi
+
+      - name: Build framework
+        run: pnpm run build:backend && pnpm run build:frontend
+
+      - name: Create test-logs directory
+        run: mkdir -p core/test-logs
+
+      - name: Run full skill conformance suite
+        run: pnpm run test:skill-conformance:ci
+        env:
+          CI: true
+          NODE_OPTIONS: '--max-old-space-size=4096'
+
+      - name: Validate artifact completeness
+        if: always()
+        run: |
+          if [ ! -f skill-conformance-run.json ]; then
+            echo "::error::skill-conformance-run.json not found — run script failed to produce output"
+            exit 1
+          fi
+          node -e "
+            const r = JSON.parse(require('fs').readFileSync('skill-conformance-run.json','utf8'));
+            const required = ['runId','timestamp','commit','branch','summary','skills','exitCode'];
+            const missing = required.filter(k => !(k in r));
+            if (missing.length) { console.error('Missing fields:', missing.join(', ')); process.exit(1); }
+            const s = r.summary;
+            console.log('Artifact valid. Skills: ' + Object.keys(r.skills).length + ' | Tests: ' + s.total + ' | Pass rate: ' + (s.passRate ?? 'n/a') + '%');
+          "
+
+      - name: Upload run record
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-skill-conformance-${{ github.sha }}-${{ github.run_id }}
+          path: skill-conformance-run.json
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Notify Slack on failure
+        if: failure()
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":warning: *Nightly skill conformance failed*\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+            }

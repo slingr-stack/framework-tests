@@ -1,0 +1,26 @@
+{
+  "extends": ["../../../core/frontend/biome.json"],
+  "linter": {
+    "rules": {
+      "style": {
+        "useImportType": "off"
+      }
+    }
+  },
+  "formatter": {
+    "lineEnding": "lf"
+  },
+  "files": {
+    "includes": [
+      "src/**",
+      "tests/**",
+      "!!**/generated",
+      "!!**/.drumr",
+      "!!**/.umi",
+      "!!**/.umi-production",
+      "!!**/.auth",
+      "!!**/playwright-report",
+      "!!**/test-results"
+    ]
+  }
+}

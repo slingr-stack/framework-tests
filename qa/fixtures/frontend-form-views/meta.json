@@ -1,0 +1,10 @@
+{
+  "skill": "frontend-form-views",
+  "date": "2026-05-26",
+  "model": "claude-sonnet-4-5",
+  "prompt": "canonical.prompt.md",
+  "baseline": "baseline.tsx",
+  "compileStatus": "pass",
+  "lintStatus": "pass",
+  "notes": "Pilot baseline — BudgetCreateView. Minimal correct CreateView: @CreateView decorator with model+path, extends CreateViewComponent<T>, optional header/layout overrides."
+}

@@ -1,0 +1,59 @@
+{
+	"ts-node": {
+		"require": ["tsconfig-paths/register"]
+	},
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "commonjs",
+		"lib": ["ES2022"],
+		"outDir": "./dist",
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"skipDefaultLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"resolveJsonModule": true,
+		"preserveSymlinks": false,
+		"moduleResolution": "node",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"rootDir": ".",
+		"baseUrl": ".",
+		"declaration": true,
+		"declarationMap": true,
+		"sourceMap": true,
+		"paths": {
+			"@/config/*": ["./src/config/*"],
+			"@/*": ["./src/*"]
+		},
+		"noImplicitOverride": true
+	},
+	"include": ["./**/*"],
+	"exclude": [
+		"node_modules",
+		"dist",
+		"**/*.test.ts",
+		"**/*.spec.ts",
+		"config",
+		"logs",
+		"tests"
+	],
+	"watchOptions": {
+		"watchFile": "useFsEventsOnParentDirectory",
+		"watchDirectory": "useFsEvents",
+		"fallbackPolling": "dynamicpriority",
+		"synchronousWatchDirectory": false,
+		"excludeDirectories": [
+			"**/node_modules",
+			"**/.git",
+			"dist",
+			"../../../core",
+			"../../../core/node_modules",
+			"../../../../node_modules"
+		],
+		"excludeFiles": [
+			"**/node_modules/**/package.json",
+			"../../../core/node_modules/**/package.json"
+		]
+	}
+}

@@ -1,0 +1,4 @@
+{
+	"includeModels": ["Address", "Project", "Task", "User"],
+	"excludeModels": []
+}

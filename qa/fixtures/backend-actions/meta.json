@@ -1,0 +1,10 @@
+{
+  "skill": "backend-actions",
+  "date": "2026-05-26",
+  "model": "claude-sonnet-4-5",
+  "prompt": "canonical.prompt.md",
+  "baseline": "baseline.ts",
+  "compileStatus": "pass",
+  "lintStatus": "pass",
+  "notes": "Pilot baseline — ArchiveBudget ObjectAction on the Budget model. Minimal correct output: typed params, constructor injection, canExecute guard, execute returns the model."
+}

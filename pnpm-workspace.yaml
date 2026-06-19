@@ -1,0 +1,7 @@
+packages:
+  - 'qa'
+  - 'project-management-app/backend'
+  - 'project-management-app/frontend'
+
+onlyBuiltDependencies:
+  - sqlite3

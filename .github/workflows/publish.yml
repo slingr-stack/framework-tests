@@ -1,0 +1,64 @@
+name: Publish Packages
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+concurrency:
+  group: publish-develop
+  cancel-in-progress: false
+
+env:
+  PNPM_VERSION: 10
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure npm authentication for Artifact Registry
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          # Write directly to ~/.npmrc — works with both npm and pnpm
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build framework
+        run: pnpm --filter @drumr/framework-backend run build && pnpm --filter @drumr/framework-frontend run build && pnpm --filter @drumr/cli run build && pnpm --filter @drumr/framework-qa run build
+
+      - name: Release
+        run: pnpm exec semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

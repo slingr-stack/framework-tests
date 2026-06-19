@@ -1,0 +1,700 @@
+name: Develop Continuous Tests
+
+on:
+  schedule:
+    # GitHub Actions schedules use UTC. Buenos Aires is UTC-3, so this runs
+    # hourly from 07:00 through 18:00 America/Argentina/Buenos_Aires.
+    - cron: '0 10-22/2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: develop-continuous-tests-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NPM_VERSION: 10.9.2
+  PNPM_VERSION: 10
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+jobs:
+  notify-start:
+    name: Develop Continuous Tests / Started
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Notify Slack - Full suite started
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ env.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":hourglass_flowing_sand: *Develop continuous tests started* on `${{ github.ref_name }}`\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+            }
+
+  build:
+    name: Develop Continuous Tests / Build Artifacts
+    runs-on: ubuntu-latest
+    needs: notify-start
+    outputs:
+      sha: ${{ steps.resolve-sha.outputs.sha }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Resolve SHA
+        id: resolve-sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pin npm version
+        run: npm install -g npm@${{ env.NPM_VERSION }}
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Show runtime versions
+        run: |
+          node -v
+          npm -v
+          pnpm -v
+
+      - name: Setup npm auth for Artifact Registry
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure npm authentication for Artifact Registry
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+
+      - name: Install root dependencies
+        run: |
+          export NODE_ENV=development
+          pnpm install --no-frozen-lockfile --prod=false --ignore-scripts=false
+
+      - name: Build framework and CLI
+        run: |
+          pnpm run build:backend
+          pnpm run build:frontend
+          pnpm run build:cli
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: develop-continuous-tests-build
+          include-hidden-files: true
+          retention-days: 1
+          path: |
+            core/backend/dist/
+            core/frontend/dist/
+            cli/dist/
+
+  cli-tests:
+    name: Develop Continuous Tests / CLI
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pin npm version
+        run: npm install -g npm@${{ env.NPM_VERSION }}
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Setup npm auth for Artifact Registry
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure npm authentication for Artifact Registry
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+
+      - name: Install root dependencies
+        run: |
+          export NODE_ENV=development
+          pnpm install --no-frozen-lockfile --prod=false --ignore-scripts=false
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: develop-continuous-tests-build
+          path: .
+
+      - name: Restore CLI templates
+        run: cp -r cli/src/templates/. cli/dist/templates/
+
+      - name: Run CLI tests
+        run: pnpm run test:cli
+
+  framework-backend-tests:
+    name: Develop Continuous Tests / Framework Backend
+    runs-on: ubuntu-latest
+    needs: build
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pin npm version
+        run: npm install -g npm@${{ env.NPM_VERSION }}
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Setup npm auth for Artifact Registry
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure npm authentication for Artifact Registry
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+
+      - name: Install root dependencies
+        run: |
+          export NODE_ENV=development
+          pnpm install --no-frozen-lockfile --prod=false --ignore-scripts=false
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: develop-continuous-tests-build
+          path: .
+
+      - name: Create test-logs directory
+        run: mkdir -p core/test-logs
+
+      - name: Run framework backend typecheck
+        run: pnpm --filter @drumr/framework-backend run typecheck
+
+      - name: Run framework backend tests
+        run: pnpm run test:backend
+        env:
+          CI: true
+          NODE_OPTIONS: --max-old-space-size=4096
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+
+  framework-frontend-tests:
+    name: Develop Continuous Tests / Framework Frontend
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pin npm version
+        run: npm install -g npm@${{ env.NPM_VERSION }}
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Setup npm auth for Artifact Registry
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure npm authentication for Artifact Registry
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+
+      - name: Install root dependencies
+        run: |
+          export NODE_ENV=development
+          pnpm install --no-frozen-lockfile --prod=false --ignore-scripts=false
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: develop-continuous-tests-build
+          path: .
+
+      - name: Run framework frontend typecheck
+        run: pnpm --filter @drumr/framework-frontend run typecheck
+
+      - name: Run framework frontend tests
+        run: pnpm --filter @drumr/framework-frontend run test
+
+  project-management-tests:
+    name: Develop Continuous Tests / Project Management App Tests
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pin npm version
+        run: npm install -g npm@${{ env.NPM_VERSION }}
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Setup npm auth for Artifact Registry
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure npm authentication for Artifact Registry
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+
+      - name: Install root dependencies
+        run: |
+          export NODE_ENV=development
+          pnpm install --no-frozen-lockfile --prod=false --ignore-scripts=false
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: develop-continuous-tests-build
+          path: .
+
+      - name: Install app dependencies
+        run: npm run install:all
+        working-directory: apps/project-management-app
+
+      - name: Run app biome check
+        run: npm run biome:check
+        working-directory: apps/project-management-app
+
+      - name: Run app backend and frontend tests
+        run: npm test
+        working-directory: apps/project-management-app
+
+  project-management-e2e:
+    name: Develop Continuous Tests / Project Management E2E
+    runs-on: ubuntu-latest
+    needs: build
+    outputs:
+      playwright_report_available: ${{ steps.detect-playwright-report.outputs.available }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.build.outputs.sha }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pin npm version
+        run: npm install -g npm@${{ env.NPM_VERSION }}
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Cache Playwright browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('apps/project-management-app/package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      - name: Setup npm auth for Artifact Registry
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure npm authentication for Artifact Registry
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+
+      - name: Install root dependencies
+        run: |
+          export NODE_ENV=development
+          pnpm install --no-frozen-lockfile --prod=false --ignore-scripts=false
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: develop-continuous-tests-build
+          path: .
+
+      - name: Install app dependencies
+        run: npm run install:all
+        working-directory: apps/project-management-app
+
+      - name: Link local Drumr CLI
+        run: |
+          mkdir -p apps/project-management-app/node_modules/.bin
+          ln -sf "$GITHUB_WORKSPACE/cli/bin/run.js" apps/project-management-app/node_modules/.bin/drumr
+          chmod +x apps/project-management-app/node_modules/.bin/drumr
+
+      - name: Sync app metadata
+        run: npx drumr sync-metadata
+        working-directory: apps/project-management-app
+
+      - name: Build app frontend
+        run: npm run build:frontend
+        working-directory: apps/project-management-app
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/project-management-app
+
+      - name: Start app infrastructure
+        run: docker compose up -d
+        working-directory: apps/project-management-app
+
+      - name: Restore app database
+        run: |
+          chmod +x scripts/restore-database.sh
+          ./scripts/restore-database.sh > frontend-restore.log 2>&1 || {
+            cat frontend-restore.log
+            exit 1
+          }
+        working-directory: apps/project-management-app
+
+      - name: Start app in dev mode
+        run: |
+          npx drumr run > app-e2e.log 2>&1 &
+          echo $! > "$RUNNER_TEMP/project-management-app-e2e.pid"
+          echo "Started Drumr dev server with PID $(cat "$RUNNER_TEMP/project-management-app-e2e.pid")"
+          echo "Streaming logs to $(pwd)/app-e2e.log"
+        working-directory: apps/project-management-app
+
+      - name: Wait for app readiness
+        run: |
+          pid_file="$RUNNER_TEMP/project-management-app-e2e.pid"
+          log_file="apps/project-management-app/app-e2e.log"
+          frontend_url="http://127.0.0.1:8000"
+          backend_url="http://localhost:3000/graphql"
+
+          # 180 attempts × 2s = 6 minutes. Backend is usually ready in ~10s, but
+          # the frontend dev bundler (utoopack / webpack) can take 60-90s on
+          # GitHub-hosted runners. Tests must not start until the bundle is
+          # actually compiled — otherwise navigations return 200 with no JS
+          # loaded yet, and every test fails at the first `waitFor` selector.
+          for attempt in $(seq 1 180); do
+            frontend_status=$(curl -s -o /dev/null -w "%{http_code}" "$frontend_url" || true)
+            backend_status=$(curl -s -o /dev/null -w "%{http_code}" \
+              -X POST "$backend_url" \
+              -H "Content-Type: application/json" \
+              -d '{"query":"{ __typename }"}' || true)
+            if [ -f "$pid_file" ] && ! kill -0 "$(cat "$pid_file")" 2>/dev/null; then
+              echo "Drumr dev server exited before readiness checks passed."
+              echo "--- app-e2e.log ---"
+              cat "$log_file" || true
+              exit 1
+            fi
+            backend_ready=false
+            bundler_ready=false
+            if grep -q "Drumr application is ready!" "$log_file"; then
+              backend_ready=true
+            fi
+            # Match whichever frontend bundler is in use — utoopack (Linux/CI default),
+            # plain webpack (Windows fallback), or mfsu (legacy fallback).
+            if grep -qE "utoo pack v.*ready in|Webpack: Compiled successfully|webpack compiled|\[MFSU\] Compiled" "$log_file"; then
+              bundler_ready=true
+            fi
+            if [ "$frontend_status" = "200" ] \
+               && [ "$backend_status" != "000" ] \
+               && [ "$backend_status" != "400" ] \
+               && [ "$backend_ready" = "true" ] \
+               && [ "$bundler_ready" = "true" ]; then
+              echo "App became ready on attempt $attempt (frontend=$frontend_status, backend=$backend_status, bundler=ready)."
+              # Give the bundler a moment to flush its output and serve the first chunk.
+              sleep 3
+              exit 0
+            fi
+            if [ "$attempt" = "1" ] || [ $((attempt % 15)) -eq 0 ]; then
+              echo "Attempt $attempt/180: frontend=$frontend_status backend=$backend_status backend_ready=$backend_ready bundler_ready=$bundler_ready"
+              echo "Recent app log output:"
+              tail -n 40 "$log_file" || true
+            fi
+            sleep 2
+          done
+
+          echo "App readiness timed out after 180 attempts (~6 minutes)."
+          echo "--- app-e2e.log ---"
+          cat "$log_file" || true
+          echo "--- Backend health response headers ---"
+          curl -I "$backend_url" || true
+          echo "--- Frontend health response headers ---"
+          curl -I "$frontend_url" || true
+          echo "--- Listening ports ---"
+          ss -ltnp || true
+          echo "--- Node processes ---"
+          ps -ef | grep node | grep -v grep || true
+          echo "--- Docker containers ---"
+          docker compose -f apps/project-management-app/docker-compose.yml ps || true
+          exit 1
+
+      - name: Run Playwright E2E tests
+        run: xvfb-run -a npm run test:e2e
+        working-directory: apps/project-management-app
+        env:
+          CI: true
+
+      - name: Stop app dev server
+        if: always()
+        run: |
+          sleep 10
+          if [ -f "$RUNNER_TEMP/project-management-app-e2e.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/project-management-app-e2e.pid")" 2>/dev/null || true
+          fi
+
+      - name: Stop app infrastructure
+        if: always()
+        run: docker compose down -v
+        working-directory: apps/project-management-app
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-management-frontend-artifacts
+          include-hidden-files: true
+          retention-days: 3
+          path: |
+            apps/project-management-app/frontend-restore.log
+            apps/project-management-app/app-e2e.log
+            apps/project-management-app/playwright-report/
+            apps/project-management-app/test-results/
+
+      - name: Detect Playwright report
+        if: always()
+        id: detect-playwright-report
+        run: |
+          if [ -f apps/project-management-app/playwright-report/index.html ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Playwright report not found; skipping GitHub Pages publication."
+          fi
+
+      - name: Upload Playwright report for GitHub Pages
+        if: always() && steps.detect-playwright-report.outputs.available == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/project-management-app/playwright-report
+
+  deploy-playwright-report:
+    name: Develop Continuous Tests / Publish Playwright Report
+    runs-on: ubuntu-latest
+    needs: project-management-e2e
+    if: always() && needs.project-management-e2e.result != 'cancelled' && needs.project-management-e2e.outputs.playwright_report_available == 'true'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy Playwright report to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Publish Playwright report URL
+        run: |
+          {
+            echo "## Playwright Report"
+            echo
+            echo "- [Open published Playwright report](${{ steps.deployment.outputs.page_url }})"
+            echo "- This page shows the latest deployed HTML report for this workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  report:
+    name: Develop Continuous Tests / Report
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - cli-tests
+      - framework-backend-tests
+      - framework-frontend-tests
+      - project-management-tests
+      - project-management-e2e
+      - deploy-playwright-report
+    if: always()
+
+    steps:
+      - name: Build workflow summary
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          CLI_RESULT: ${{ needs.cli-tests.result }}
+          FRAMEWORK_BACKEND_RESULT: ${{ needs.framework-backend-tests.result }}
+          FRAMEWORK_FRONTEND_RESULT: ${{ needs.framework-frontend-tests.result }}
+          APP_TESTS_RESULT: ${{ needs.project-management-tests.result }}
+          APP_E2E_RESULT: ${{ needs.project-management-e2e.result }}
+          PLAYWRIGHT_REPORT_RESULT: ${{ needs.deploy-playwright-report.result }}
+        run: |
+          cat <<EOF >> "$GITHUB_STEP_SUMMARY"
+          ## Develop Continuous Tests
+
+          Branch: ${{ github.ref_name }}
+          Commit: ${{ github.sha }}
+
+          | Job | Result |
+          | --- | --- |
+          | Build | $BUILD_RESULT |
+          | CLI | $CLI_RESULT |
+          | Framework backend | $FRAMEWORK_BACKEND_RESULT |
+          | Framework frontend | $FRAMEWORK_FRONTEND_RESULT |
+          | Project Management app tests | $APP_TESTS_RESULT |
+          | Project Management E2E | $APP_E2E_RESULT |
+          | Playwright report publish | $PLAYWRIGHT_REPORT_RESULT |
+          EOF
+
+      - name: Determine overall status
+        id: status
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
+          CLI_RESULT: ${{ needs.cli-tests.result }}
+          FRAMEWORK_BACKEND_RESULT: ${{ needs.framework-backend-tests.result }}
+          FRAMEWORK_FRONTEND_RESULT: ${{ needs.framework-frontend-tests.result }}
+          APP_TESTS_RESULT: ${{ needs.project-management-tests.result }}
+          APP_E2E_RESULT: ${{ needs.project-management-e2e.result }}
+          PLAYWRIGHT_REPORT_RESULT: ${{ needs.deploy-playwright-report.result }}
+        run: |
+          failed_jobs=()
+          for item in \
+            "build:$BUILD_RESULT" \
+            "cli:$CLI_RESULT" \
+            "framework-backend:$FRAMEWORK_BACKEND_RESULT" \
+            "framework-frontend:$FRAMEWORK_FRONTEND_RESULT" \
+            "project-management-tests:$APP_TESTS_RESULT" \
+            "project-management-e2e:$APP_E2E_RESULT" \
+            "deploy-playwright-report:$PLAYWRIGHT_REPORT_RESULT"; do
+            name="${item%%:*}"
+            result="${item#*:}"
+            if [ "$result" != "success" ]; then
+              failed_jobs+=("$name")
+            fi
+          done
+
+          if [ ${#failed_jobs[@]} -eq 0 ]; then
+            echo "overall=success" >> "$GITHUB_OUTPUT"
+            echo "failed_jobs=none" >> "$GITHUB_OUTPUT"
+          else
+            echo "overall=failure" >> "$GITHUB_OUTPUT"
+            echo "failed_jobs=$(IFS=', '; echo "${failed_jobs[*]}")" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Notify Slack - Success
+        if: ${{ env.SLACK_WEBHOOK_URL != '' && steps.status.outputs.overall == 'success' }}
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ env.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":white_check_mark: *Develop continuous tests passed* on `${{ github.ref_name }}`\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+            }
+
+      - name: Notify Slack - Failure
+        if: ${{ env.SLACK_WEBHOOK_URL != '' && steps.status.outputs.overall != 'success' }}
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ env.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":x: *Develop continuous tests failed* on `${{ github.ref_name }}`\nFailed jobs: ${{ steps.status.outputs.failed_jobs }}\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+            }
+
+      - name: Fail workflow if any job failed
+        if: steps.status.outputs.overall != 'success'
+        run: exit 1

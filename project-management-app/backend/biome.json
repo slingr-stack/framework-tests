@@ -1,0 +1,22 @@
+{
+	"extends": ["../../../core/backend/biome.json"],
+	"javascript": {
+		"parser": {
+			"unsafeParameterDecoratorsEnabled": true
+		}
+	},
+	"files": {
+		"includes": [
+			"src/**",
+			"tests/**",
+			"!!**/generated",
+			"!!**/.drumr",
+			"!!**/.auth",
+			"!!**/playwright-report",
+			"!!**/test-results"
+		]
+	},
+	"formatter": {
+		"lineEnding": "lf"
+	}
+}

@@ -1,0 +1,1145 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-06-16T22:44:52.066Z",
+  "models": {
+    "Book": {
+      "modelName": "Book",
+      "hash": "c6d6dcdda9a488e87eeaac229d4a57a92b03fd41dc590d2fb5dc5327f21edebc",
+      "fields": {
+        "title": {
+          "name": "title",
+          "type": "text",
+          "decorators": [
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "status": {
+          "name": "status",
+          "type": "choice",
+          "decorators": [
+            "choice",
+            "enum:borrowed,inStock,missing"
+          ],
+          "isArray": false
+        },
+        "author": {
+          "name": "author",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "showDescription": {
+          "name": "showDescription",
+          "type": "boolean",
+          "decorators": [
+            "boolean"
+          ],
+          "isArray": false
+        },
+        "descriptionRequired": {
+          "name": "descriptionRequired",
+          "type": "boolean",
+          "decorators": [
+            "boolean"
+          ],
+          "isArray": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "decorators": [
+            "maxLength:200",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "relationship",
+          "decorators": [
+            "rel:composition",
+            "relationship"
+          ],
+          "isArray": true
+        },
+        "evaluation": {
+          "name": "evaluation",
+          "type": "relationship",
+          "decorators": [
+            "rel:composition",
+            "relationship"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "BookNote": {
+      "modelName": "BookNote",
+      "hash": "284b078b45422894fe14d99fedd3b6a24fcf29da225a619086f0ad02e5b93daf",
+      "fields": {
+        "note": {
+          "name": "note",
+          "type": "text",
+          "decorators": [
+            "maxLength:2000",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "relationship",
+          "decorators": [
+            "rel:composition",
+            "relationship"
+          ],
+          "isArray": true
+        },
+        "author": {
+          "name": "author",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "owner": {
+          "name": "owner",
+          "type": "relationship",
+          "decorators": [
+            "rel:owner",
+            "relationship"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "BookNoteMetadata": {
+      "modelName": "BookNoteMetadata",
+      "hash": "7105b9ec1e1604f425c523857c2dab28664a1e56a0c82cbcb02e5359bd1d4758",
+      "fields": {
+        "owner": {
+          "name": "owner",
+          "type": "relationship",
+          "decorators": [
+            "rel:owner",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "decorators": [
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "decorators": [
+            "maxLength:500",
+            "text"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "BookEvaluation": {
+      "modelName": "BookEvaluation",
+      "hash": "f3d74a377071ab243d85ff1906bb8bf94ed1205e267d2aa99c1be3a3111ab921",
+      "fields": {
+        "stars": {
+          "name": "stars",
+          "type": "integer",
+          "decorators": [
+            "integer",
+            "max:5",
+            "min:1"
+          ],
+          "isArray": false
+        },
+        "comment": {
+          "name": "comment",
+          "type": "text",
+          "decorators": [
+            "maxLength:2000",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "owner": {
+          "name": "owner",
+          "type": "relationship",
+          "decorators": [
+            "rel:owner",
+            "relationship"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "Project": {
+      "modelName": "Project",
+      "hash": "a9f606c4ee6741a7ddcdad0148fc9acf40dba57a17047ac07266e1e37025171c",
+      "fields": {
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "decorators": [
+            "maxLength:200",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "decorators": [
+            "maxLength:100",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "decorators": [
+            "maxLength:20",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "description": {
+          "name": "description",
+          "type": "html",
+          "decorators": [
+            "html",
+            "maxLength:5000"
+          ],
+          "isArray": false
+        },
+        "status": {
+          "name": "status",
+          "type": "choice",
+          "decorators": [
+            "choice",
+            "enum:active,cancelled,completed,on_hold,planning"
+          ],
+          "isArray": false
+        },
+        "priority": {
+          "name": "priority",
+          "type": "choice",
+          "decorators": [
+            "choice",
+            "enum:critical,high,low,medium"
+          ],
+          "isArray": false
+        },
+        "startDate": {
+          "name": "startDate",
+          "type": "date",
+          "decorators": [
+            "date"
+          ],
+          "isArray": false
+        },
+        "endDate": {
+          "name": "endDate",
+          "type": "date",
+          "decorators": [
+            "date"
+          ],
+          "isArray": false
+        },
+        "budget": {
+          "name": "budget",
+          "type": "money",
+          "decorators": [
+            "min:0",
+            "money"
+          ],
+          "isArray": false
+        },
+        "completionPercentage": {
+          "name": "completionPercentage",
+          "type": "integer",
+          "decorators": [
+            "integer",
+            "max:100",
+            "min:0"
+          ],
+          "isArray": false
+        },
+        "meetingTime": {
+          "name": "meetingTime",
+          "type": "time",
+          "decorators": [
+            "max:17:00",
+            "min:08:00",
+            "precision:HH:mm",
+            "time"
+          ],
+          "isArray": false
+        },
+        "manager": {
+          "name": "manager",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "teamMembers": {
+          "name": "teamMembers",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": true
+        },
+        "isArchived": {
+          "name": "isArchived",
+          "type": "boolean",
+          "decorators": [
+            "boolean"
+          ],
+          "isArray": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "datetime",
+          "decorators": [
+            "datetime"
+          ],
+          "isArray": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "datetime",
+          "decorators": [
+            "datetime"
+          ],
+          "isArray": false
+        },
+        "support": {
+          "name": "support",
+          "type": "relationship",
+          "decorators": [
+            "rel:composition",
+            "relationship"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "ProjectReport": {
+      "modelName": "ProjectReport",
+      "hash": "6aef4c8454f50b01dc61d0850bf19fb88ddeb366a0f716a697c973109102a662",
+      "fields": {
+        "title": {
+          "name": "title",
+          "type": "text",
+          "decorators": [
+            "text"
+          ],
+          "isArray": false
+        },
+        "generatedAt": {
+          "name": "generatedAt",
+          "type": "datetime",
+          "decorators": [
+            "datetime"
+          ],
+          "isArray": false
+        },
+        "project": {
+          "name": "project",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "file": {
+          "name": "file",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "sections": {
+          "name": "sections",
+          "type": "array:text",
+          "decorators": [
+            "array:text"
+          ],
+          "isArray": true
+        }
+      }
+    },
+    "Budget": {
+      "modelName": "Budget",
+      "hash": "2e68b8b2186b0b5b1f70a34b648ef099975ef869cea652c55ec0aaacf03b36fa",
+      "fields": {
+        "laborCost": {
+          "name": "laborCost",
+          "type": "decimal",
+          "decorators": [
+            "decimal"
+          ],
+          "isArray": false
+        },
+        "subtotal": {
+          "name": "subtotal",
+          "type": "decimal",
+          "decorators": [
+            "decimal"
+          ],
+          "isArray": false
+        },
+        "taxAmount": {
+          "name": "taxAmount",
+          "type": "decimal",
+          "decorators": [
+            "decimal"
+          ],
+          "isArray": false
+        },
+        "total": {
+          "name": "total",
+          "type": "decimal",
+          "decorators": [
+            "decimal"
+          ],
+          "isArray": false
+        },
+        "effectiveTaxRate": {
+          "name": "effectiveTaxRate",
+          "type": "decimal",
+          "decorators": [
+            "decimal"
+          ],
+          "isArray": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "decorators": [
+            "text"
+          ],
+          "isArray": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "decorators": [
+            "maxLength:200",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "hourlyRate": {
+          "name": "hourlyRate",
+          "type": "decimal",
+          "decorators": [
+            "decimal",
+            "min:0"
+          ],
+          "isArray": false
+        },
+        "estimatedHours": {
+          "name": "estimatedHours",
+          "type": "number",
+          "decorators": [
+            "min:0",
+            "number"
+          ],
+          "isArray": false
+        },
+        "materialsCost": {
+          "name": "materialsCost",
+          "type": "decimal",
+          "decorators": [
+            "decimal",
+            "min:0"
+          ],
+          "isArray": false
+        },
+        "taxRate": {
+          "name": "taxRate",
+          "type": "decimal",
+          "decorators": [
+            "decimal",
+            "max:100",
+            "min:0"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "Support": {
+      "modelName": "Support",
+      "hash": "90e7042e721b8065330d072ac947d35e93457ee2bb18063e7c0cd0766bac1a91",
+      "fields": {
+        "owner": {
+          "name": "owner",
+          "type": "relationship",
+          "decorators": [
+            "rel:owner",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "email": {
+          "name": "email",
+          "type": "email",
+          "decorators": [
+            "email"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "ReviewChecks": {
+      "modelName": "ReviewChecks",
+      "hash": "de1fa59bb383abcdd1e4374a87e4a7a48e7501245268bacb428c06234acb2d6a",
+      "fields": {
+        "owner": {
+          "name": "owner",
+          "type": "relationship",
+          "decorators": [
+            "rel:owner",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "lintCode": {
+          "name": "lintCode",
+          "type": "boolean",
+          "decorators": [
+            "boolean"
+          ],
+          "isArray": false
+        },
+        "testsCoverage": {
+          "name": "testsCoverage",
+          "type": "boolean",
+          "decorators": [
+            "boolean"
+          ],
+          "isArray": false
+        },
+        "sampleAppImplementation": {
+          "name": "sampleAppImplementation",
+          "type": "boolean",
+          "decorators": [
+            "boolean"
+          ],
+          "isArray": false
+        },
+        "deploymentChecks": {
+          "name": "deploymentChecks",
+          "type": "relationship",
+          "decorators": [
+            "rel:composition",
+            "relationship"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "File": {
+      "modelName": "File",
+      "hash": "ab95f779806e271c142f7323465f0e05a9e6dd3111bc6048d6fb466ad405232e",
+      "fields": {
+        "name": {
+          "name": "name",
+          "type": "text",
+          "decorators": [
+            "text"
+          ],
+          "isArray": false
+        },
+        "size": {
+          "name": "size",
+          "type": "number",
+          "decorators": [
+            "number"
+          ],
+          "isArray": false
+        },
+        "contentType": {
+          "name": "contentType",
+          "type": "text",
+          "decorators": [
+            "text"
+          ],
+          "isArray": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "datetime",
+          "decorators": [
+            "datetime"
+          ],
+          "isArray": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "decorators": [
+            "text"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "Document": {
+      "modelName": "Document",
+      "hash": "3d4cfaa358003d06f73ef206e717008bf3a7ed7d30d68a8e215f667fb1b34422",
+      "fields": {
+        "title": {
+          "name": "title",
+          "type": "text",
+          "decorators": [
+            "maxLength:200",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "content": {
+          "name": "content",
+          "type": "longText",
+          "decorators": [
+            "longText",
+            "maxLength:5000"
+          ],
+          "isArray": false
+        },
+        "status": {
+          "name": "status",
+          "type": "choice",
+          "decorators": [
+            "choice",
+            "enum:archived,draft,published"
+          ],
+          "isArray": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "datetime",
+          "decorators": [
+            "datetime"
+          ],
+          "isArray": false
+        },
+        "version": {
+          "name": "version",
+          "type": "version",
+          "decorators": [
+            "version"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "DeploymentChecks": {
+      "modelName": "DeploymentChecks",
+      "hash": "dd4aa8c0df26a6d2933e9bc7a6eb0a1f262e5e34aaf4e44aa29ea6ee69ec2431",
+      "fields": {
+        "owner": {
+          "name": "owner",
+          "type": "relationship",
+          "decorators": [
+            "rel:owner",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "stagingDeploy": {
+          "name": "stagingDeploy",
+          "type": "boolean",
+          "decorators": [
+            "boolean"
+          ],
+          "isArray": false
+        },
+        "productionDeploy": {
+          "name": "productionDeploy",
+          "type": "boolean",
+          "decorators": [
+            "boolean"
+          ],
+          "isArray": false
+        },
+        "rollbackPlan": {
+          "name": "rollbackPlan",
+          "type": "boolean",
+          "decorators": [
+            "boolean"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "Address": {
+      "modelName": "Address",
+      "hash": "5d641bcd07851113a2e68b29135412c06ee2cb260b8aabdfc7b9aa1eba1e7f0b",
+      "fields": {
+        "street": {
+          "name": "street",
+          "type": "text",
+          "decorators": [
+            "maxLength:200",
+            "text"
+          ],
+          "isArray": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "decorators": [
+            "maxLength:100",
+            "text"
+          ],
+          "isArray": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "decorators": [
+            "maxLength:100",
+            "text"
+          ],
+          "isArray": false
+        },
+        "postalCode": {
+          "name": "postalCode",
+          "type": "text",
+          "decorators": [
+            "maxLength:20",
+            "text"
+          ],
+          "isArray": false
+        },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "decorators": [
+            "maxLength:100",
+            "text"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "Task": {
+      "modelName": "Task",
+      "hash": "a756536b9d253e08cebb39d8e3d278c495d981019f6816a5a3733acb9c571ab4",
+      "fields": {
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "decorators": [
+            "maxLength:200",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "decorators": [
+            "maxLength:200",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "description": {
+          "name": "description",
+          "type": "longText",
+          "decorators": [
+            "longText",
+            "maxLength:5000"
+          ],
+          "isArray": false
+        },
+        "status": {
+          "name": "status",
+          "type": "choice",
+          "decorators": [
+            "choice",
+            "enum:blocked,done,in_progress,in_review,to_do"
+          ],
+          "isArray": false
+        },
+        "priority": {
+          "name": "priority",
+          "type": "choice",
+          "decorators": [
+            "choice",
+            "enum:critical,high,low,medium,urgent"
+          ],
+          "isArray": false
+        },
+        "project": {
+          "name": "project",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": false,
+          "filter": "() => ({\n            isArchived: false,\n        })"
+        },
+        "assignee": {
+          "name": "assignee",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": false,
+          "filter": "() => ({\n            roles: {\n                elemMatch: { in: [user_data_model_1.Role.Developer, user_data_model_1.Role.Manager, user_data_model_1.Role.Admin] },\n            },\n        })"
+        },
+        "reporter": {
+          "name": "reporter",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": false,
+          "filter": "() => ({\n            roles: {\n                elemMatch: { in: [user_data_model_1.Role.Developer, user_data_model_1.Role.Manager, user_data_model_1.Role.Admin] },\n            },\n        })"
+        },
+        "estimatedHours": {
+          "name": "estimatedHours",
+          "type": "integer",
+          "decorators": [
+            "integer",
+            "max:999",
+            "min:0"
+          ],
+          "isArray": false
+        },
+        "actualHours": {
+          "name": "actualHours",
+          "type": "integer",
+          "decorators": [
+            "integer",
+            "max:999",
+            "min:0"
+          ],
+          "isArray": false
+        },
+        "dueDate": {
+          "name": "dueDate",
+          "type": "date",
+          "decorators": [
+            "date"
+          ],
+          "isArray": false
+        },
+        "startedAt": {
+          "name": "startedAt",
+          "type": "date",
+          "decorators": [
+            "date"
+          ],
+          "isArray": false
+        },
+        "completedAt": {
+          "name": "completedAt",
+          "type": "date",
+          "decorators": [
+            "date"
+          ],
+          "isArray": false
+        },
+        "isBillable": {
+          "name": "isBillable",
+          "type": "boolean",
+          "decorators": [
+            "boolean"
+          ],
+          "isArray": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "array:text",
+          "decorators": [
+            "array:text"
+          ],
+          "isArray": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "datetime",
+          "decorators": [
+            "datetime"
+          ],
+          "isArray": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "datetime",
+          "decorators": [
+            "datetime"
+          ],
+          "isArray": false
+        },
+        "technicalDetails": {
+          "name": "technicalDetails",
+          "type": "longText",
+          "decorators": [
+            "longText"
+          ],
+          "isArray": false
+        },
+        "jsonMetadata": {
+          "name": "jsonMetadata",
+          "type": "json",
+          "decorators": [
+            "json"
+          ],
+          "isArray": false
+        },
+        "reviewChecks": {
+          "name": "reviewChecks",
+          "type": "relationship",
+          "decorators": [
+            "rel:composition",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "relationship",
+          "decorators": [
+            "rel:composition",
+            "relationship"
+          ],
+          "isArray": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "relationship",
+          "decorators": [
+            "rel:composition",
+            "relationship"
+          ],
+          "isArray": true
+        },
+        "attachments": {
+          "name": "attachments",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": true
+        }
+      }
+    },
+    "TaskMetadata": {
+      "modelName": "TaskMetadata",
+      "hash": "a2665e102c7ad8d29b77b8e42a7d617efecd2fc4cd9fdaca751a201012b625e8",
+      "fields": {
+        "owner": {
+          "name": "owner",
+          "type": "relationship",
+          "decorators": [
+            "rel:owner",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "decorators": [
+            "maxLength:100",
+            "text"
+          ],
+          "isArray": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "decorators": [
+            "maxLength:500",
+            "text"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "Note": {
+      "modelName": "Note",
+      "hash": "1df8e8ff265591e483bdb6c61a9763f7c2e2ca02ed040b929c38c9b674692571",
+      "fields": {
+        "title": {
+          "name": "title",
+          "type": "text",
+          "decorators": [
+            "maxLength:200",
+            "minLength:3",
+            "text"
+          ],
+          "isArray": false
+        },
+        "note": {
+          "name": "note",
+          "type": "longText",
+          "decorators": [
+            "longText",
+            "maxLength:2000"
+          ],
+          "isArray": false
+        },
+        "createdBy": {
+          "name": "createdBy",
+          "type": "relationship",
+          "decorators": [
+            "rel:reference",
+            "relationship"
+          ],
+          "isArray": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "datetime",
+          "decorators": [
+            "datetime"
+          ],
+          "isArray": false
+        },
+        "owner": {
+          "name": "owner",
+          "type": "relationship",
+          "decorators": [
+            "rel:owner",
+            "relationship"
+          ],
+          "isArray": false
+        }
+      }
+    },
+    "User": {
+      "modelName": "User",
+      "hash": "d35f26fc726c688554eb88cf29e3ccd9bf1e27366144d6db75a553fb5808cfce",
+      "fields": {
+        "fullName": {
+          "name": "fullName",
+          "type": "text",
+          "decorators": [
+            "maxLength:100",
+            "text"
+          ],
+          "isArray": false
+        },
+        "firstName": {
+          "name": "firstName",
+          "type": "text",
+          "decorators": [
+            "text"
+          ],
+          "isArray": false
+        },
+        "lastName": {
+          "name": "lastName",
+          "type": "text",
+          "decorators": [
+            "text"
+          ],
+          "isArray": false
+        },
+        "email": {
+          "name": "email",
+          "type": "email",
+          "decorators": [
+            "email"
+          ],
+          "isArray": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "decorators": [
+            "text"
+          ],
+          "isArray": false
+        },
+        "status": {
+          "name": "status",
+          "type": "choice",
+          "decorators": [
+            "choice",
+            "enum:active,inactive"
+          ],
+          "isArray": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "datetime",
+          "decorators": [
+            "datetime"
+          ],
+          "isArray": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "datetime",
+          "decorators": [
+            "datetime"
+          ],
+          "isArray": false
+        },
+        "roles": {
+          "name": "roles",
+          "type": "array:choice",
+          "decorators": [
+            "array:choice",
+            "enum:admin,developer,manager,system"
+          ],
+          "isArray": true
+        },
+        "addresses": {
+          "name": "addresses",
+          "type": "relationship",
+          "decorators": [
+            "rel:sharedComposition",
+            "relationship"
+          ],
+          "isArray": true
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "name": "project-management-app-frontend",
+  "version": "1.0.0",
+  "description": "Drumr frontend views for Tasky app",
+  "scripts": {
+    "dev": "max dev",
+    "build": "npm run type-check && max build",
+    "type-check": "tsc --noEmit",
+    "test": "npm run test:unit && npm run test:integration",
+    "test:unit": "jest --config config/jest.config.ts --testPathPatterns='tests/unit'",
+    "test:integration": "jest --config config/jest.config.ts --testPathPatterns='tests/integration'",
+    "test:watch": "jest --config config/jest.config.ts --watch"
+  },
+  "keywords": [
+    "drumr",
+    "ui",
+    "project-management"
+  ],
+  "author": "Drumr Team",
+  "license": "MIT",
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^6.4.8",
+    "@ant-design/icons": "^6.1.0",
+    "@ant-design/pro-components": "3.1.12-0",
+    "@apollo/client": "^4.0.11",
+    "@drumr/framework-frontend": "1.0.0-beta.14",
+    "@drumr/framework-qa": "workspace:^",
+    "@umijs/bundler-utoopack": "^4.6.55",
+    "@umijs/max": "^4.6.55",
+    "antd": "6.4.2",
+    "antd-style": "^4.1.0",
+    "classnames": "^2.5.1",
+    "dayjs": "^1.11.20",
+    "graphql": "^16.12.0",
+    "graphql-request": "^7.4.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^6.30.1",
+    "rxjs": "^7.8.2",
+    "umi-presets-pro": "2.0.3"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-decorators": "^7.29.0",
+    "@babel/plugin-syntax-import-attributes": "^7.28.6",
+    "@babel/preset-env": "^7.29.2",
+    "@babel/preset-react": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "@testing-library/react": "^16.3.2",
+    "@types/fs-extra": "^11.0.4",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "babel-jest": "^30.3.0",
+    "babel-plugin-transform-typescript-metadata": "^0.4.0",
+    "glob": "^11.0.0",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2"
+  }
+}

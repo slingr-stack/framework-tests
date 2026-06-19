@@ -1,0 +1,294 @@
+# Cloud Build pipeline for project-management-app
+# Triggered on push to the `develop` branch.
+#
+# Uses the built-in $PROJECT_ID substitution for the GCP project ID.
+# All substitutions below have sensible defaults — override in the trigger
+# only if you deployed with non-default values in setup-gcp.js.
+#
+# Note: this pipeline is monorepo-style. Cloud Build runs from the monorepo
+# root, so the trigger must point at apps/project-management-app/ops/cloudbuild.yaml
+# (set BUILD_CONFIG when running setup-trigger.js).
+#
+# Optional substitutions (set in the Cloud Build trigger to override defaults):
+#   _REGION          Cloud Run region (default: us-central1)
+#   _AR_REPO         Artifact Registry repo name (default: drumr-apps)
+#   _RESOURCE_PREFIX Resource prefix used for service, secrets, bucket, job, URL map (default: project-mgmt)
+#   _BACKEND_SERVICE Cloud Run backend service name (default: project-mgmt-backend)
+#   _BACKEND_MAX_INSTANCES Cloud Run backend max instances (default: 1)
+#   _DB_SECRET_NAME  Secret Manager secret for DB password (default: project-mgmt-db-password)
+#   _JWT_SECRET_NAME Secret Manager secret for JWT signing key (default: project-mgmt-jwt-secret)
+#   _BACKEND_SA      Cloud Run service account local-part (default: project-mgmt-backend)
+#   _DB_INSTANCE_NAME Cloud SQL instance name; its private IP is discovered at build time (default: project-mgmt-db)
+#   _VPC_NAME        VPC network for Direct VPC egress (default: project-mgmt-vpc)
+#   _SUBNET_NAME     Subnet for Direct VPC egress (default: project-mgmt-subnet)
+#   _SEED_ADMIN_EMAIL Initial admin email seeded by the migrate job (default: sys@app.com)
+#   _SEED_ADMIN_SECRET_NAME Secret with the seed admin password (default: project-mgmt-seed-admin-pass)
+#   _FRONTEND_HOSTING Frontend hosting strategy: simple or prod (default: simple)
+#   _BACKEND_ALWAYS_ON Set to 'true' to run with --no-cpu-throttling --min-instances=1
+#                      (needed for apps with background workers; default: false = scale to zero)
+
+substitutions:
+  _REGION: us-central1
+  _AR_REPO: drumr-apps
+  _RESOURCE_PREFIX: project-mgmt
+  _BACKEND_SERVICE: project-mgmt-backend
+  _BACKEND_MAX_INSTANCES: '1'
+  _BACKEND_SA: project-mgmt-backend
+  _DB_INSTANCE_NAME: project-mgmt-db
+  _VPC_NAME: project-mgmt-vpc
+  _SUBNET_NAME: project-mgmt-subnet
+  _DB_SECRET_NAME: project-mgmt-db-password
+  _JWT_SECRET_NAME: project-mgmt-jwt-secret
+  _SEED_ADMIN_EMAIL: sys@app.com
+  _SEED_ADMIN_SECRET_NAME: project-mgmt-seed-admin-pass
+  _GCS_FILES_BUCKET: $PROJECT_ID-project-mgmt-files
+  _FRONTEND_HOSTING: simple
+  _BACKEND_ALWAYS_ON: 'false'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  # ── Auth ──────────────────────────────────────────────────────────────────────
+  # Obtain a short-lived Artifact Registry access token so subsequent steps can
+  # pull @drumr/* npm packages from the private registry.
+  # Written to /workspace/.npm-token; read by build-frontend and build-backend.
+  # Cloud Build pipelines finish well within the 1-hour token TTL.
+  - id: get-npm-token
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
+    entrypoint: bash
+    args:
+      - -c
+      - gcloud auth print-access-token > /workspace/.npm-token
+
+  # ── Frontend ───────────────────────────────────────────────────────────────────
+  # Install frontend deps from the private Artifact Registry npm registry,
+  # generate metadata (view registries, GraphQL types) using the published
+  # @drumr/cli package, then build the SPA.
+  - id: build-frontend
+    name: node:20-alpine
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -e
+        npm install -g pnpm@10
+
+        # Configure npm auth for @drumr packages (pnpm also reads ~/.npmrc).
+        NPM_TOKEN=$(cat /workspace/.npm-token)
+        npm config set @drumr:registry https://us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/
+        npm config set //us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken "$$NPM_TOKEN"
+
+        # Replace workspace:* refs with the published registry versions so pnpm
+        # resolves @drumr/* from the npm registry rather than the local (unbuilt) sources.
+        cat > /tmp/patch-workspace.js << 'PATCH_EOF'
+        const fs = require('fs');
+        function patch(path, names) {
+          const pkg = JSON.parse(fs.readFileSync(path, 'utf8'));
+          for (const name of names) {
+            if (pkg.dependencies && pkg.dependencies[name] === 'workspace:*') pkg.dependencies[name] = 'latest';
+            if (pkg.devDependencies && pkg.devDependencies[name] === 'workspace:*') pkg.devDependencies[name] = 'latest';
+          }
+          fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + '\n');
+        }
+        patch('/workspace/apps/project-management-app/backend/package.json', ['@drumr/framework-backend']);
+        patch('/workspace/apps/project-management-app/frontend/package.json', ['@drumr/framework-frontend', '@drumr/framework-qa']);
+        console.log('workspace:* patched → latest');
+        PATCH_EOF
+        node /tmp/patch-workspace.js
+
+        # Install frontend deps (including @drumr/framework-frontend).
+        # --no-frozen-lockfile because we patched workspace:* refs above.
+        cd apps/project-management-app/frontend
+        pnpm install --no-frozen-lockfile
+
+        cd ..
+
+        # Generate view registries, GraphQL schema & SDK types using the published CLI.
+        npx --yes @drumr/cli sync-metadata
+
+        # Build the frontend.
+        cd frontend
+        pnpm run build
+    waitFor:
+      - get-npm-token
+
+  # ── Backend ──────────────────────────────────────────────────────────────────
+
+  # Pull the previous image to use as a cache layer (ignore failure on first run).
+  - id: pull-backend-cache
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        docker pull ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_BACKEND_SERVICE}:latest \
+          || echo "No cache found, proceeding without it."
+
+  # Build the backend image from the app root.
+  # In simple mode the frontend dist is baked into the image.
+  # Passes the Artifact Registry token as a BuildKit secret so npm install
+  # can pull @drumr/framework-backend without busting the layer cache.
+  - id: build-backend
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    env:
+      - DOCKER_BUILDKIT=1
+    args:
+      - -c
+      - |
+        set -e
+        export NPM_TOKEN=$(cat /workspace/.npm-token)
+        docker build \
+          --cache-from=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_BACKEND_SERVICE}:latest \
+          --secret id=npm_token,env=NPM_TOKEN \
+          -f apps/project-management-app/backend/Dockerfile \
+          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_BACKEND_SERVICE}:$COMMIT_SHA \
+          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_BACKEND_SERVICE}:latest \
+          apps/project-management-app
+    waitFor:
+      - pull-backend-cache
+      - build-frontend
+
+  # Push both tags so future builds can use :latest as a cache.
+  - id: push-backend
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_BACKEND_SERVICE}
+    waitFor:
+      - build-backend
+
+  # ── Schema sync (Cloud Run Job) ────────────────────────────────────────────────
+  # Runs the backend container once with DB_SYNCHRONIZE=true so TypeORM
+  # creates / updates tables safely before the production service deploys.
+  # The job exits as soon as the app has finished starting up.
+  - id: schema-sync
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -e
+        IMAGE="${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_BACKEND_SERVICE}:$COMMIT_SHA"
+        BACKEND_SA_INPUT="${_BACKEND_SA}"
+        BACKEND_SA_LOCAL="$${BACKEND_SA_INPUT%%@*}"
+        BACKEND_SA="$${BACKEND_SA_LOCAL}@$PROJECT_ID.iam.gserviceaccount.com"
+        JOB_NAME="${_RESOURCE_PREFIX}-migrate"
+
+        # Discover the Cloud SQL private IP (runtime connects over it via Direct VPC egress).
+        DB_PRIVATE_IP=$(gcloud sql instances describe ${_DB_INSTANCE_NAME} \
+          --project=$PROJECT_ID \
+          --format='value(ipAddresses.filter("type:PRIVATE").extract(ipAddress).flatten())')
+        if [ -z "$$DB_PRIVATE_IP" ]; then
+          echo "ERROR: Cloud SQL instance ${_DB_INSTANCE_NAME} has no private IP." >&2
+          exit 1
+        fi
+
+        # The migration job also seeds the initial admin user in-region (framework
+        # seeds when NODE_ENV=migration and SEED_ADMIN_* are set).
+        MIGRATE_ARGS=(
+          --image="$$IMAGE"
+          --region=${_REGION}
+          --service-account="$$BACKEND_SA"
+          --network=${_VPC_NAME}
+          --subnet=${_SUBNET_NAME}
+          --vpc-egress=private-ranges-only
+          --set-secrets="DB_PASSWORD=${_DB_SECRET_NAME}:latest,SEED_ADMIN_PASSWORD=${_SEED_ADMIN_SECRET_NAME}:latest"
+          --set-env-vars="DB_HOST=$$DB_PRIVATE_IP,DB_PORT=5432,DB_USER=postgres,DB_NAME=project_management_app,DB_SSL=true,DB_SYNCHRONIZE=true,NODE_ENV=migration,SEED_ADMIN_EMAIL=${_SEED_ADMIN_EMAIL}"
+          --max-retries=1
+          --project=$PROJECT_ID
+        )
+        if gcloud run jobs describe "$$JOB_NAME" \
+             --region=${_REGION} --project=$PROJECT_ID &>/dev/null; then
+          gcloud run jobs update "$$JOB_NAME" "$${MIGRATE_ARGS[@]}"
+        else
+          gcloud run jobs create "$$JOB_NAME" "$${MIGRATE_ARGS[@]}"
+        fi
+
+        # Execute and wait for the job to finish (exit code propagated).
+        gcloud run jobs execute "$$JOB_NAME" \
+          --region=${_REGION} \
+          --wait \
+          --project=$PROJECT_ID
+    waitFor:
+      - push-backend
+
+  # ── Deploy backend ─────────────────────────────────────────────────────────────
+  - id: deploy-backend
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -e
+        BACKEND_SA_INPUT="${_BACKEND_SA}"
+        BACKEND_SA_LOCAL="$${BACKEND_SA_INPUT%%@*}"
+        BACKEND_SA="$${BACKEND_SA_LOCAL}@$PROJECT_ID.iam.gserviceaccount.com"
+
+        # Discover the Cloud SQL private IP (runtime connects over it via Direct VPC egress).
+        DB_PRIVATE_IP=$(gcloud sql instances describe ${_DB_INSTANCE_NAME} \
+          --project=$PROJECT_ID \
+          --format='value(ipAddresses.filter("type:PRIVATE").extract(ipAddress).flatten())')
+        if [ -z "$$DB_PRIVATE_IP" ]; then
+          echo "ERROR: Cloud SQL instance ${_DB_INSTANCE_NAME} has no private IP." >&2
+          exit 1
+        fi
+
+        # Set DRUMR_SKIP_UI=true in prod mode so the backend does not serve the SPA.
+        EXTRA_ENV=""
+        if [ "${_FRONTEND_HOSTING}" = "prod" ]; then
+          EXTRA_ENV=",DRUMR_SKIP_UI=true"
+        fi
+
+        # BACKEND_ALWAYS_ON=true keeps CPU allocated and a warm instance running.
+        # Needed for apps with background workers (DBOS workflows, schedulers,
+        # queue/notification listeners) to avoid pg pool starvation and
+        # "Connection terminated due to connection timeout" errors.
+        # Default: scale to zero (cheapest, fine for simple/test apps).
+        CPU_SCALING_FLAGS="--min-instances=0"
+        if [ "${_BACKEND_ALWAYS_ON}" = "true" ]; then
+          CPU_SCALING_FLAGS="--no-cpu-throttling --min-instances=1"
+        fi
+
+        # CI uses --update-* so previously synced app secrets survive a CI push.
+        # Cloud Build does not read backend/.env, so new app secrets must be
+        # created first by a manual deploy.js run. Only the reserved keys below
+        # are re-asserted by CI on every build.
+        gcloud run deploy ${_BACKEND_SERVICE} \
+          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_BACKEND_SERVICE}:$COMMIT_SHA \
+          --region=${_REGION} \
+          --platform=managed \
+          --service-account="$$BACKEND_SA" \
+          --network=${_VPC_NAME} \
+          --subnet=${_SUBNET_NAME} \
+          --vpc-egress=private-ranges-only \
+          --update-secrets="DB_PASSWORD=${_DB_SECRET_NAME}:latest,JWT_SECRET=${_JWT_SECRET_NAME}:latest" \
+          --update-env-vars="DB_HOST=$$DB_PRIVATE_IP,DB_PORT=5432,DB_USER=postgres,DB_NAME=project_management_app,DB_SSL=true,DB_SYNCHRONIZE=true,NODE_ENV=production,HOST=0.0.0.0,STORAGE_TYPE=gcs,GCS_BUCKET=${_GCS_FILES_BUCKET}$$EXTRA_ENV" \
+          --max-instances=${_BACKEND_MAX_INSTANCES} \
+          $$CPU_SCALING_FLAGS \
+          --allow-unauthenticated \
+          --project=$PROJECT_ID
+    waitFor:
+      - schema-sync
+
+  # ── Deploy frontend (prod mode only) ──────────────────────────────────────
+  - id: deploy-frontend-prod
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:alpine
+    entrypoint: sh
+    args:
+      - -c
+      - |
+        set -e
+        if [ "${_FRONTEND_HOSTING}" != "prod" ]; then
+          echo "simple mode — frontend is baked into the backend image, skipping."
+          exit 0
+        fi
+        apk add --no-cache nodejs npm
+        export PROJECT_ID="$PROJECT_ID"
+        export RESOURCE_PREFIX="${_RESOURCE_PREFIX}"
+        node apps/project-management-app/ops/scripts/deploy-frontend-prod.js
+    waitFor:
+      - build-frontend
+      - deploy-backend

@@ -1,0 +1,566 @@
+name: Pre-merge tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to run CI for (optional)'
+        required: false
+        type: string
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+env:
+  NPM_VERSION: 10.9.2
+  PNPM_VERSION: 10
+
+jobs:
+  build:
+    name: Pre-merge tests / Build
+    runs-on: ubuntu-latest
+    # Only run when:
+    # 1. Manually triggered via workflow_dispatch, OR
+    # 2. Comment on PR contains "/run-tests" command
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && 
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '/run-tests'))
+
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+
+    steps:
+      - name: Get PR details
+        if: github.event_name == 'issue_comment' || (github.event_name == 'workflow_dispatch' && inputs.pr_number != '')
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = '${{ github.event_name }}' === 'issue_comment'
+              ? context.issue.number
+              : parseInt('${{ inputs.pr_number }}');
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            return {
+              ref: pr.data.head.ref,
+              sha: pr.data.head.sha,
+              repo: pr.data.head.repo.full_name,
+              number: pr.data.number,
+              title: pr.data.title,
+              html_url: pr.data.html_url
+            };
+
+      - name: Post workflow started comment
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `🔄 **Pre-merge tests started**\n\nRunning tests and checks...\n\n[View workflow run](${runUrl})`
+            });
+
+      - name: Notify slack - Tests started
+        if: steps.pr.outputs.result != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":hourglass_flowing_sand: *Pre-merge tests started* for PR #${{ fromJSON(steps.pr.outputs.result).number }} — _${{ fromJSON(steps.pr.outputs.result).title }}_\n<${{ fromJSON(steps.pr.outputs.result).html_url }}|View PR> · <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+            }
+
+      - name: Create pending commit status
+        if: steps.pr.outputs.result != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prData = JSON.parse('${{ steps.pr.outputs.result }}');
+            const sha = prData.sha;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: sha,
+              state: 'pending',
+              target_url: runUrl,
+              description: 'CI checks are running...',
+              context: 'Pre-merge Tests / Test Status'
+            });
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ (github.event_name == 'issue_comment' || (github.event_name == 'workflow_dispatch' && inputs.pr_number != '')) && fromJSON(steps.pr.outputs.result).sha || github.sha }}
+          repository: ${{ (github.event_name == 'issue_comment' || (github.event_name == 'workflow_dispatch' && inputs.pr_number != '')) && fromJSON(steps.pr.outputs.result).repo || github.repository }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pin npm version
+        run: npm install -g npm@${{ env.NPM_VERSION }}
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Show runtime versions
+        run: |
+          node -v
+          npm -v
+          pnpm -v
+
+      - name: Setup npm auth for Artifact Registry
+        if: ${{ steps.pr.outputs.result == '' || fromJSON(steps.pr.outputs.result).repo == github.repository }}
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        if: ${{ steps.pr.outputs.result == '' || fromJSON(steps.pr.outputs.result).repo == github.repository }}
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure npm authentication for Artifact Registry
+        if: ${{ steps.pr.outputs.result == '' || fromJSON(steps.pr.outputs.result).repo == github.repository }}
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+
+      - name: Install root dependencies
+        run: |
+          export NODE_ENV=development
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile --prod=false --ignore-scripts=false
+          else
+            echo "pnpm-lock.yaml not found; installing without frozen lockfile"
+            pnpm install --no-frozen-lockfile --prod=false --ignore-scripts=false
+          fi
+
+      - name: Build framework
+        run: pnpm run build:backend && pnpm run build:frontend
+
+      # Create test-logs directory to prevent ENOENT errors
+      - name: Create test-logs directory
+        run: mkdir -p core/test-logs
+
+      # Blocking check: Linting must pass
+      - name: Lint code
+        run: pnpm run lint
+
+      # Blocking check: Build must succeed
+      - name: Build CLI
+        run: pnpm run build:cli
+
+      # Upload build artifacts for test jobs
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          include-hidden-files: true
+          path: |
+            core/backend/dist/
+            core/frontend/dist/
+            cli/dist/
+          retention-days: 1
+
+  test:
+    name: Pre-merge Tests / ${{ matrix.job-name }}
+    runs-on: ubuntu-latest
+    needs: build
+    continue-on-error: ${{ matrix.allow-failure == true }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: framework
+            job-name: Backend Postgres tests
+            step-name: framework backend postgres tests
+            test-db: postgres
+            needs-xvfb: false
+            allow-failure: false
+            test-command: pnpm run test:backend:postgres
+
+          - package: framework
+            job-name: Backend integration tests
+            step-name: framework backend integration tests
+            test-db: postgres
+            needs-xvfb: false
+            allow-failure: false
+            test-command: pnpm --filter @drumr/framework-backend run test:integration
+          - package: framework-backend
+            job-name: Backend static checks
+            step-name: framework backend static checks
+            test-db: none
+            needs-xvfb: false
+            allow-failure: false
+            test-command: pnpm --filter @drumr/framework-backend run biome:check:errors && pnpm --filter @drumr/framework-backend run typecheck
+          - package: framework-frontend
+            job-name: Frontend checks and tests
+            step-name: framework frontend checks and tests
+            test-db: none
+            needs-xvfb: false
+            allow-failure: false
+            test-command: pnpm --filter @drumr/framework-frontend run biome:check && pnpm --filter @drumr/framework-frontend run typecheck && pnpm --filter @drumr/framework-frontend run test
+          - package: cli
+            job-name: CLI tests
+            step-name: cli tests
+            test-db: none
+            needs-xvfb: false
+            allow-failure: false
+            test-command: pnpm run test:cli
+
+          # allow-failure: true — skills and framework are actively evolving;
+          # re-enable blocking once release cadence stabilises.
+          - package: skill-conformance
+            job-name: Skill conformance
+            step-name: skill conformance checks
+            test-db: none
+            needs-xvfb: false
+            allow-failure: true
+            test-command: pnpm run test:skill-conformance:ci
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Get PR details
+        if: github.event_name == 'issue_comment' || (github.event_name == 'workflow_dispatch' && inputs.pr_number != '')
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = '${{ github.event_name }}' === 'issue_comment'
+              ? context.issue.number
+              : parseInt('${{ inputs.pr_number }}');
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            return {
+              ref: pr.data.head.ref,
+              sha: pr.data.head.sha,
+              repo: pr.data.head.repo.full_name
+            };
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ (github.event_name == 'issue_comment' || (github.event_name == 'workflow_dispatch' && inputs.pr_number != '')) && fromJSON(steps.pr.outputs.result).sha || github.sha }}
+          repository: ${{ (github.event_name == 'issue_comment' || (github.event_name == 'workflow_dispatch' && inputs.pr_number != '')) && fromJSON(steps.pr.outputs.result).repo || github.repository }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pin npm version
+        run: npm install -g npm@${{ env.NPM_VERSION }}
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Show runtime versions
+        run: |
+          node -v
+          npm -v
+          pnpm -v
+
+      - name: Setup npm auth for Artifact Registry
+        if: ${{ steps.pr.outputs.result == '' || fromJSON(steps.pr.outputs.result).repo == github.repository }}
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        if: ${{ steps.pr.outputs.result == '' || fromJSON(steps.pr.outputs.result).repo == github.repository }}
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure npm authentication for Artifact Registry
+        if: ${{ steps.pr.outputs.result == '' || fromJSON(steps.pr.outputs.result).repo == github.repository }}
+        run: |
+          TOKEN=$(gcloud auth print-access-token)
+          echo "::add-mask::$TOKEN"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm-virtual/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+          echo "//us-central1-npm.pkg.dev/future-name-492914-n5/drumr-npm/:_authToken=${TOKEN}" >> "${HOME}/.npmrc"
+
+      - name: Install root dependencies
+        run: |
+          export NODE_ENV=development
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile --prod=false --ignore-scripts=false
+          else
+            echo "pnpm-lock.yaml not found; installing without frozen lockfile"
+            pnpm install --no-frozen-lockfile --prod=false --ignore-scripts=false
+          fi
+
+      # Download build artifacts
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+          path: .
+
+      - name: Ensure backend package is built for CLI tests
+        if: matrix.package == 'cli'
+        run: pnpm --filter @drumr/framework-backend run build
+
+      # Restore CLI templates from source (artifact upload/download may drop hidden files like .gitignore)
+      - name: Restore CLI templates
+        if: matrix.package == 'cli'
+        run: cp -r cli/src/templates/. cli/dist/templates/
+
+      # Create test-logs directory for framework tests
+      - name: Create test-logs directory
+        if: matrix.package == 'framework'
+        run: mkdir -p core/test-logs
+
+      # Run tests
+      - name: Run ${{ matrix.step-name }}
+        run: ${{ matrix.test-command }}
+        env:
+          CI: true
+          NODE_OPTIONS: '--max-old-space-size=4096'
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+
+      # Upload skill-conformance run record as a workflow artifact
+      - name: Post skill-conformance summary as PR comment
+        if: matrix.package == 'skill-conformance' && steps.pr.outputs.result != '' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const runFile = 'skill-conformance-run.json';
+            if (!fs.existsSync(runFile)) {
+              console.log('skill-conformance-run.json not found — skipping PR comment');
+              return;
+            }
+            const run = JSON.parse(fs.readFileSync(runFile, 'utf8'));
+            const prData = JSON.parse('${{ steps.pr.outputs.result }}');
+            // Derive PR number directly — prData only contains { ref, sha, repo }
+            const prNumber = context.eventName === 'issue_comment'
+              ? context.issue.number
+              : parseInt('${{ inputs.pr_number }}');
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            const failingSkills = Object.entries(run.skills ?? {})
+              .filter(([, s]) => (s.failed ?? 0) > 0)
+              .map(([name, s]) => ({ name, failed: s.failed, passed: s.passed }));
+
+            let body;
+            if (failingSkills.length === 0) {
+              body = `✅ **Skill Conformance** — all ${run.summary.total} tests passed.\n\n[View run](${runUrl})`;
+            } else {
+              const rows = failingSkills.map(({ name, failed, passed }) => {
+                const agentPath = `qa/agents/skills/skill-conformance/${name}-conformance.agent.md`;
+                const agentUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/blob/${prData.sha}/${agentPath}`;
+                return `| \`${name}\` | ${failed} | ${passed} | [open agent](${agentUrl}) |`;
+              }).join('\n');
+              body = `⚠️ **Skill Conformance — ${failingSkills.length} skill(s) regressed**\n\n` +
+                `| Skill | Failed | Passed | Agent |\n` +
+                `|-------|--------|--------|-------|\n` +
+                rows + `\n\n` +
+                `**To update scores:** run \`pnpm run scores:update\` on your branch, then commit \`skill-scores.json\`.\n\n` +
+                `> _Skill conformance is non-blocking. Failures mean the spec suite diverges from the \`skill-scores.json\` baseline._\n\n` +
+                `[View run](${runUrl})`;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });
+
+      - name: Upload skill-conformance run record
+        if: matrix.package == 'skill-conformance' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-conformance-pr-${{ github.sha }}-${{ github.run_id }}
+          path: skill-conformance-run.json
+          retention-days: 30
+          if-no-files-found: error
+
+  test-status:
+    name: Pre-merge Tests / Test Status
+    runs-on: ubuntu-latest
+    needs: test
+    if: always() && needs.test.result != 'skipped'
+
+    steps:
+      # Non-blocking: Security audit warnings don't fail the build
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Pin npm version
+        run: npm install -g npm@${{ env.NPM_VERSION }}
+
+      - name: Install pnpm
+        run: npm install -g pnpm@${{ env.PNPM_VERSION }}
+
+      - name: Show runtime versions
+        run: |
+          node -v
+          npm -v
+          pnpm -v
+
+      - name: Run security audit
+        run: |
+          pnpm audit --filter @drumr/framework-backend --audit-level=moderate || echo "::warning::Security vulnerabilities found in framework"
+          pnpm audit --filter @drumr/cli --audit-level=moderate || echo "::warning::Security vulnerabilities found in CLI"
+        continue-on-error: true
+
+      - name: Get PR details
+        if: github.event_name == 'issue_comment' || (github.event_name == 'workflow_dispatch' && inputs.pr_number != '')
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = '${{ github.event_name }}' === 'issue_comment'
+              ? context.issue.number
+              : parseInt('${{ inputs.pr_number }}');
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            return {
+              ref: pr.data.head.ref,
+              sha: pr.data.head.sha,
+              repo: pr.data.head.repo.full_name,
+              number: pr.data.number,
+              title: pr.data.title,
+              html_url: pr.data.html_url
+            };
+
+      - name: Create success commit status
+        if: needs.test.result == 'success' && steps.pr.outputs.result != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prData = JSON.parse('${{ steps.pr.outputs.result }}');
+            const sha = prData.sha;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: sha,
+              state: 'success',
+              target_url: runUrl,
+              description: 'All checks passed',
+              context: 'Pre-merge Tests / Test Status'
+            });
+
+      - name: Notify Slack - Tests Passed
+        if: needs.test.result == 'success' && steps.pr.outputs.result != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":white_check_mark: *Pre-merge tests passed* for PR #${{ fromJSON(steps.pr.outputs.result).number }} — _${{ fromJSON(steps.pr.outputs.result).title }}_\n<${{ fromJSON(steps.pr.outputs.result).html_url }}|View PR> · <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+            }
+
+      - name: Post workflow success comment
+        if: github.event_name == 'issue_comment' && needs.test.result == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `✅ **Pre-merge Tests Completed Successfully**\n\nAll tests and checks passed!\n\n[View workflow run](${runUrl})`
+            });
+
+      - name: Create failure commit status
+        if: needs.test.result != 'success' && steps.pr.outputs.result != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prData = JSON.parse('${{ steps.pr.outputs.result }}');
+            const sha = prData.sha;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: sha,
+              state: 'failure',
+              target_url: runUrl,
+              description: 'Some checks failed',
+              context: 'Pre-merge Tests / Test Status'
+            });
+
+      - name: Notify slack - Tests failed
+        if: needs.test.result != 'success' && steps.pr.outputs.result != ''
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ":x: *Pre-merge tests failed* for PR #${{ fromJSON(steps.pr.outputs.result).number }} — _${{ fromJSON(steps.pr.outputs.result).title }}_\n<${{ fromJSON(steps.pr.outputs.result).html_url }}|View PR> · <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View run>"
+            }
+
+      - name: Post workflow failure comment
+        if: github.event_name == 'issue_comment' && needs.test.result == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `❌ **Pre-merge Tests Failed**\n\nSome tests or checks did not pass. Please review the errors.\n\n[View workflow run](${runUrl})`
+            });
+
+      - name: Check test results
+        run: |
+          if [ "${{ needs.test.result }}" != "success" ]; then
+            echo "Tests failed"
+            exit 1
+          fi
+          echo "All tests passed"

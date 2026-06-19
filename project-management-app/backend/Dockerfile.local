@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1
+# Local-source variant — uses the local monorepo @drumr/framework-backend
+# source/build output directly, without private npm registry or tarball packing.
+# Build context: this app's root directory.
+#
+# Do NOT invoke docker compose directly with this file.
+# Use the orchestrator instead:
+#   node apps/project-management-app/ops/scripts/run-scaling-locks-local.js
+
+# ── Stage 1: compile ──────────────────────────────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+COPY backend/package*.json ./
+COPY backend/.local-framework-backend/package.json .framework-backend/package.json
+COPY backend/.local-framework-backend/dist .framework-backend/dist
+# Rewrite pnpm "workspace:" dependency specifiers to point at the local
+# framework-backend directory copied from the monorepo.
+RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));for(const s of ['dependencies','devDependencies']){const d=p[s]||{};for(const n of Object.keys(d)){if(typeof d[n]==='string'&&d[n].startsWith('workspace:'))d[n]='file:.framework-backend';}}fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+RUN npm install --no-package-lock
+
+COPY --exclude=node_modules --exclude=.env --exclude=.env.example --exclude=package.json --exclude=package-lock.json backend/ ./
+RUN npm run build
+
+# ── Stage 2: production dependencies ──────────────────────────────────────────
+FROM node:20-alpine AS prod-deps
+WORKDIR /app
+
+COPY backend/package*.json ./
+COPY backend/.local-framework-backend/package.json .framework-backend/package.json
+COPY backend/.local-framework-backend/dist .framework-backend/dist
+# Same workspace-protocol patch as stage 1 (see comment above).
+RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));for(const s of ['dependencies','devDependencies']){const d=p[s]||{};for(const n of Object.keys(d)){if(typeof d[n]==='string'&&d[n].startsWith('workspace:'))d[n]='file:.framework-backend';}}fs.writeFileSync('package.json',JSON.stringify(p,null,2));"
+RUN npm install --omit=dev --no-package-lock
+
+# ── Stage 3: runtime ──────────────────────────────────────────────────────────
+FROM node:20-alpine AS runtime
+WORKDIR /app
+
+COPY --from=builder /app/dist/ dist/
+COPY --from=prod-deps /app/node_modules/ node_modules/
+COPY --from=prod-deps /app/.framework-backend/ .framework-backend/
+COPY backend/package.json ./
+COPY backend/config/ config/
+COPY frontend/dist/ dist/ui/
+
+ENV NODE_ENV=production
+EXPOSE 8080
+
+CMD ["node", "dist/src/App.js"]

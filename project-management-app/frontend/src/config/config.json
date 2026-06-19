@@ -1,0 +1,9 @@
+{
+  "views": {
+    "modalSize": "big",
+    "modalPosition": "center"
+  },
+  "custom": {
+    "showIcons": true
+  }
+}
